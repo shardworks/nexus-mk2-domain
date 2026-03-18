@@ -9,6 +9,35 @@
  * Agent contributions must conform to the types exported by this module.
  */
 
+// ─── Effect ────────────────────────────────────────────────
+
+/**
+ * An Effect declares what an Operation causes to happen in the system.
+ * Effects describe outcomes in domain terms, not implementation mechanics.
+ */
+export type Effect = ProducesEffect;
+
+/**
+ * A "produces" Effect indicates that an Operation deposits a new
+ * Artifact of the specified type into its ArtifactStore.
+ */
+export interface ProducesEffect {
+  readonly kind: "produces";
+  readonly artifactType: ArtifactTypeName;
+}
+
+// ─── Operation ─────────────────────────────────────────────
+
+/**
+ * An Operation is a named action that an Operator can perform.
+ * It is defined by its Effects — what it causes to exist or change
+ * in the system — not by a method signature or invocation contract.
+ */
+export interface Operation {
+  readonly name: string;
+  readonly effects: readonly Effect[];
+}
+
 // ─── Operator ───────────────────────────────────────────────
 
 /**
@@ -16,32 +45,120 @@
  * It can receive requests and produce results. An Operator does not
  * imply a running process — it may be invoked on demand or run
  * continuously.
+ *
+ * Each Operator declares the Operations it can perform.
  */
 export interface Operator {
   readonly name: string;
+  readonly operations: readonly Operation[];
 }
 
 // ─── Auditor ────────────────────────────────────────────────
 
 /**
- * An Auditor evaluates the current state of the project against
- * the requirements registry and produces an AuditReport.
- * It is read-only — it observes and reports but does not make changes.
+ * The "audit" Operation evaluates the project against the Requirements
+ * registry and deposits an Artifact<AuditReport> in the AuditReport
+ * ArtifactStore.
+ */
+export interface AuditOperation extends Operation {
+  readonly name: "audit";
+  readonly effects: readonly [{ readonly kind: "produces"; readonly artifactType: "audit-report" }];
+}
+
+/**
+ * An Auditor is an Operator that evaluates the current state of the
+ * project against the Requirements registry. It is read-only — it
+ * observes and reports but does not make changes.
  */
 export interface Auditor extends Operator {
   readonly name: "auditor";
-  audit(): Promise<AuditReport>;
+  readonly operations: readonly [AuditOperation];
 }
 
 // ─── AuditReport ────────────────────────────────────────────
 
 /**
  * The structured output of an Auditor's evaluation.
- * Contains per-requirement assessments of the project's compliance.
- * Internal structure TBD.
+ * Contains per-Requirement verdicts with supporting evidence.
  */
 export interface AuditReport {
-  readonly results: unknown;
+  readonly verdicts: readonly Verdict[];
+}
+
+/**
+ * A single Requirement's evaluation outcome.
+ */
+export interface Verdict {
+  /** The Requirement id this verdict applies to. */
+  readonly requirementId: string;
+  readonly result: VerdictResult;
+  /** Observations supporting the verdict. */
+  readonly evidence: readonly string[];
+}
+
+export type VerdictResult = "pass" | "fail" | "unknown";
+
+// ─── Artifact ──────────────────────────────────────────────
+
+/**
+ * The fixed set of Artifact types in the system. Each name corresponds
+ * to a domain data type and has a dedicated ArtifactStore.
+ */
+export type ArtifactTypeName = "audit-report";
+
+/**
+ * An Artifact is a typed, persistent record produced by an Operation.
+ * It wraps a domain data type (like AuditReport) with identity and
+ * metadata. An Artifact outlives the Operation that created it and
+ * is retrievable from its ArtifactStore.
+ */
+export interface Artifact<T> {
+  readonly type: ArtifactTypeName;
+  readonly id: string;
+  readonly createdAt: string;
+  readonly content: T;
+}
+
+// ─── ArtifactStore ─────────────────────────────────────────
+
+/**
+ * An ArtifactStore is the canonical home for Artifacts of a single type.
+ * It supports deposit (Operations create Artifacts here) and retrieval
+ * (other parts of the system read Artifacts from here).
+ *
+ * The storage mechanism (filesystem, database, cloud storage, etc.)
+ * is an implementation detail constrained by Requirements, not by
+ * this definition.
+ */
+export interface ArtifactStore<T> {
+  readonly artifactType: ArtifactTypeName;
+}
+
+/**
+ * The system's catalog of ArtifactStores. Each Artifact type has
+ * exactly one store. This is the entry point for locating where
+ * Artifacts of a given type live.
+ */
+export interface ArtifactStoreRegistry {
+  readonly auditReport: ArtifactStore<AuditReport>;
+}
+
+// ─── Dispatcher ────────────────────────────────────────────
+
+/**
+ * A Dispatcher triggers Operations on Operators. Given an Operator
+ * name and an Operation name, it causes the Operation to execute
+ * and its declared Effects to occur.
+ *
+ * The Dispatcher does not return results directly. Produced Artifacts
+ * are deposited in the appropriate ArtifactStore as declared by the
+ * Operation's Effects.
+ *
+ * How the Dispatcher invokes an Operation (starting an Agent, running
+ * a script, etc.) is an implementation detail.
+ */
+export interface Dispatcher {
+  readonly operators: readonly Operator[];
 }
 
 // ─── Agent ──────────────────────────────────────────────────
