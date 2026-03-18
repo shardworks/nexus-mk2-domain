@@ -23,4 +23,21 @@ export interface Agent {
   role: string;
 }
 
+/**
+ * A Task is a discrete unit of work assigned to an Agent.
+ */
+export interface Task {
+  /** Unique identifier for the task. */
+  id: string;
+
+  /** Short description of what the task requires. */
+  summary: string;
+
+  /** The agent assigned to this task, if any. */
+  assignee?: Agent["id"];
+
+  /** Current lifecycle status. */
+  status: "pending" | "in-progress" | "complete" | "blocked";
+}
+
 // TODO: Define and export additional domain types
