@@ -180,9 +180,8 @@ export interface Agent {
 
 /**
  * A Requirement is a named, trackable statement about what the system
- * must do or how it must behave. Each requirement has a corresponding
- * markdown file containing its full prose description. The id matches
- * the markdown filename (without extension).
+ * must do or how it must behave. The id matches the requirement's
+ * filename slug (without extension).
  */
 export interface Requirement {
   readonly id: string;
@@ -190,7 +189,7 @@ export interface Requirement {
   readonly status: RequirementStatus;
   readonly priority: RequirementPriority;
 
-  /** Relative path to the prose markdown file (e.g. "./auditor-agent.md"). */
+  /** The full prose description of the requirement. */
   readonly body: string;
 
   readonly acceptance: readonly string[];

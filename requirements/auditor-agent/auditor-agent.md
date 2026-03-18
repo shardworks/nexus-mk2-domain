@@ -1,3 +1,15 @@
+---
+title: Auditor Agent
+status: draft
+priority: high
+acceptance:
+  - An auditor agent exists that can read the requirements registry
+  - The auditor produces a structured report covering every registered requirement
+  - Each requirement in the report is assessed as met, not met, or unclear
+  - Assessments include evidence or reasoning
+  - The auditor makes no changes to the project
+---
+
 # Auditor Agent
 
 The system must include an auditor agent that evaluates the current state of the project against the requirements registry and produces a structured compliance report.
