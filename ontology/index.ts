@@ -23,4 +23,34 @@ export interface Agent {
   role: string;
 }
 
-// TODO: Define and export additional domain types
+/**
+ * Requirements
+ *
+ * A Requirement is a named, trackable statement about what the system must do
+ * or how it must behave. Each requirement has a corresponding markdown file
+ * containing its full prose description. The id matches the markdown filename
+ * (without extension).
+ */
+
+export type RequirementStatus = "draft" | "active" | "deprecated";
+export type RequirementPriority = "high" | "medium" | "low";
+
+export interface Requirement {
+  /** Kebab-case slug, matches the .md filename (e.g. "auditor-agent"). */
+  id: string;
+
+  /** Human-readable title. */
+  title: string;
+
+  /** Lifecycle status. */
+  status: RequirementStatus;
+
+  /** Relative importance. */
+  priority: RequirementPriority;
+
+  /** Relative path to the prose markdown file (e.g. "./auditor-agent.md"). */
+  body: string;
+
+  /** Concrete criteria that define when this requirement is met. */
+  acceptance: string[];
+}
