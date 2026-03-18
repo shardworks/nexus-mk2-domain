@@ -79,9 +79,12 @@ export interface Auditor extends Operator {
 
 /**
  * The structured output of an Auditor's evaluation.
- * Contains per-Requirement verdicts with supporting evidence.
+ * Contains a prose summary and per-Requirement verdicts with
+ * supporting evidence.
  */
 export interface AuditReport {
+  /** A brief prose overview of the audit findings. */
+  readonly summary: string;
   readonly verdicts: readonly Verdict[];
 }
 
@@ -180,8 +183,8 @@ export interface Agent {
 
 /**
  * A Requirement is a named, trackable statement about what the system
- * must do or how it must behave. The id matches the requirement's
- * filename slug (without extension).
+ * must do or how it must behave. The id is derived from the requirement's
+ * path: "<feature-slug>/<requirement-slug>".
  */
 export interface Requirement {
   readonly id: string;
