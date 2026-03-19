@@ -3,7 +3,8 @@ title: Herald Agent
 status: active
 acceptance:
   - A herald agent exists that reads structured session documentation
-  - Herald produces outward-facing markdown narratives (blog posts, recaps, deep-dives, status updates)
+  - Herald produces a single Artifact<Publication> per invocation
+  - The artifact conforms to the Publication schema defined in the domain ontology
   - Herald surveys the full session corpus via frontmatter before selecting relevant sessions
   - Herald reads selected sessions in chronological order before writing
   - Herald output is grounded in session documentation — no invented content
@@ -15,10 +16,4 @@ acceptance:
 
 The system must include a herald agent that synthesizes accumulated session documentation into outward-facing published content. Herald is a publishing agent — it reads source material and produces a written artifact. It has no interactive role.
 
-## Output
-
-Herald produces markdown files at `nexus-mk2-notes/herald/<yyyy-mm-dd>-<slug>.md` with frontmatter indicating the content type, scope, and source sessions. Output formats include recaps, deep-dives, status updates, and blog posts — determined by the invocation prompt.
-
-## Process
-
-Herald follows a strict read-then-write sequence: survey the corpus via frontmatter, select relevant sessions, read them in chronological order, then write thematically. The Herald Notes sections in session docs are written specifically for Herald and should be prioritized as source material.
+Herald is modeled as a `Herald` Operator in the domain ontology, with a single `HeraldOperation` that produces `Artifact<Publication>` artifacts deposited in the Publication ArtifactStore.

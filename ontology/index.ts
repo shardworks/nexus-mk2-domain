@@ -101,13 +101,113 @@ export interface Verdict {
 
 export type VerdictResult = "pass" | "fail" | "unknown";
 
+// ─── Scribe ────────────────────────────────────────────────
+
+/**
+ * The "scribe" Operation synthesizes a raw session transcript into
+ * a structured SessionDoc and deposits an Artifact<SessionDoc> in the
+ * SessionDoc ArtifactStore.
+ */
+export interface ScribeOperation extends Operation {
+  readonly name: "scribe";
+  readonly effects: readonly [{ readonly kind: "produces"; readonly artifactType: "session-doc" }];
+}
+
+/**
+ * A Scribe is an Operator that transforms raw session transcripts into
+ * structured session documentation. It is a batch processor — it reads,
+ * synthesizes, and writes. It has no interactive role.
+ */
+export interface Scribe extends Operator {
+  readonly name: "scribe";
+  readonly operations: readonly [ScribeOperation];
+}
+
+// ─── SessionDoc ────────────────────────────────────────────
+
+/**
+ * The structured output of a Scribe's synthesis of a session transcript.
+ * Contains metadata about the session and a prose narrative of what
+ * happened.
+ */
+export interface SessionDoc {
+  readonly date: string;
+  readonly topic: string;
+  readonly tags: readonly SessionTag[];
+  readonly significance: Significance;
+  /** Path to the primary transcript file that was synthesized. */
+  readonly transcript: string;
+  readonly body: string;
+}
+
+/**
+ * Controlled vocabulary for categorizing session topics.
+ */
+export type SessionTag =
+  | "philosophy"
+  | "agent-design"
+  | "architecture"
+  | "tooling"
+  | "workflow"
+  | "domain"
+  | "meta";
+
+/**
+ * How important a session was to the project's development.
+ */
+export type Significance = "low" | "medium" | "high";
+
+// ─── Herald ────────────────────────────────────────────────
+
+/**
+ * The "herald" Operation synthesizes session documentation into an
+ * outward-facing narrative and deposits an Artifact<Publication> in
+ * the Publication ArtifactStore.
+ */
+export interface HeraldOperation extends Operation {
+  readonly name: "herald";
+  readonly effects: readonly [{ readonly kind: "produces"; readonly artifactType: "publication" }];
+}
+
+/**
+ * A Herald is an Operator that synthesizes accumulated session
+ * documentation into outward-facing published content. It reads
+ * source material and produces a written artifact. It has no
+ * interactive role.
+ */
+export interface Herald extends Operator {
+  readonly name: "herald";
+  readonly operations: readonly [HeraldOperation];
+}
+
+// ─── Publication ───────────────────────────────────────────
+
+/**
+ * The structured output of a Herald's synthesis of session documentation.
+ * A publishable narrative aimed at an outside audience.
+ */
+export interface Publication {
+  readonly date: string;
+  readonly type: PublicationType;
+  /** Brief description of what sessions or period this covers. */
+  readonly scope: string;
+  /** Paths to the session docs that were synthesized. */
+  readonly sessions: readonly string[];
+  readonly body: string;
+}
+
+/**
+ * The kind of published content a Herald produces.
+ */
+export type PublicationType = "recap" | "deep-dive" | "status-update" | "blog-post";
+
 // ─── Artifact ──────────────────────────────────────────────
 
 /**
  * The fixed set of Artifact types in the system. Each name corresponds
  * to a domain data type and has a dedicated ArtifactStore.
  */
-export type ArtifactTypeName = "audit-report";
+export type ArtifactTypeName = "audit-report" | "session-doc" | "publication";
 
 /**
  * An Artifact is a typed, persistent record produced by an Operation.
@@ -144,6 +244,8 @@ export interface ArtifactStore<T> {
  */
 export interface ArtifactStoreRegistry {
   readonly auditReport: ArtifactStore<AuditReport>;
+  readonly sessionDoc: ArtifactStore<SessionDoc>;
+  readonly publication: ArtifactStore<Publication>;
 }
 
 // ─── Dispatcher ────────────────────────────────────────────
