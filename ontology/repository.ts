@@ -8,7 +8,7 @@
  * system (domain vs implementation) and the product they belong to.
  */
 export interface Repository {
-  /** The repository's fully qualified name (e.g., "shardworks/nexus-mk2"). */
+  /** The repository's short name (e.g., "nexus-mk2"). */
   readonly name: string;
   readonly type: RepositoryType;
   /**
@@ -36,13 +36,13 @@ export type RepositoryType = "domain" | "implementation" | "artifacts";
  * Human-owned; agents must not modify it.
  */
 export interface NexusDomainRepository extends Repository {
-  readonly name: "shardworks/nexus-mk2-domain";
+  readonly name: "nexus-mk2-domain";
   readonly type: "domain";
   readonly product: "nexus";
 }
 
 export const NEXUS_DOMAIN_REPO = {
-  name: "shardworks/nexus-mk2-domain",
+  name: "nexus-mk2-domain",
   type: "domain",
   product: "nexus",
 } as const satisfies Repository;
@@ -52,13 +52,13 @@ export const NEXUS_DOMAIN_REPO = {
  * agents build and maintain.
  */
 export interface NexusImplementationRepository extends Repository {
-  readonly name: "shardworks/nexus-mk2";
+  readonly name: "nexus-mk2";
   readonly type: "implementation";
   readonly product: "nexus";
 }
 
 export const NEXUS_IMPL_REPO = {
-  name: "shardworks/nexus-mk2",
+  name: "nexus-mk2",
   type: "implementation",
   product: "nexus",
 } as const satisfies Repository;
@@ -72,13 +72,13 @@ export const NEXUS_IMPL_REPO = {
  * stored locally and do not use this repository.
  */
 export interface NexusArtifactsRepository extends Repository {
-  readonly name: "shardworks/nexus-mk2-artifacts";
+  readonly name: "nexus-mk2-artifacts";
   readonly type: "artifacts";
   readonly product: "nexus";
 }
 
 export const NEXUS_ARTIFACTS_REPO = {
-  name: "shardworks/nexus-mk2-artifacts",
+  name: "nexus-mk2-artifacts",
   type: "artifacts",
   product: "nexus",
 } as const satisfies Repository;
