@@ -100,6 +100,8 @@
         - Invalidated Assessments are reassessed before stale Assessments
         - Stale Assessments are reassessed at a lower priority, only when
           no invalidated or missing Assessments are pending
+        - The audit loop idles between stale Assessment re-evaluations —
+          at most one stale Assessment is re-evaluated per idle period
       notes:
         - type: rationale
           body: >-
