@@ -3,11 +3,9 @@ title: Session Doc Structure
 status: active
 acceptance:
   - Session docs are valid markdown files with YAML frontmatter
-  - Frontmatter includes all required fields: date, topic, tags, significance, transcript
-  - The tags field uses only values from the SessionTag controlled vocabulary (philosophy, agent-design, architecture, tooling, workflow, domain, meta)
-  - The significance field uses only values from the Significance controlled vocabulary (low, medium, high)
-  - The date field is an ISO 8601 date
-  - The transcript field is a path to the primary transcript file
+  - Frontmatter conforms to the SessionDoc schema in the domain ontology
+  - The tags field uses only values from the SessionTag controlled vocabulary
+  - The significance field uses only values from the Significance controlled vocabulary
   - The body contains a prose narrative organized by topic
 ---
 

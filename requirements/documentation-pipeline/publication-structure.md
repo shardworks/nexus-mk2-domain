@@ -3,10 +3,8 @@ title: Publication Structure
 status: active
 acceptance:
   - Publications are valid markdown files with YAML frontmatter
-  - Frontmatter includes all required fields: date, type, scope, sessions
-  - The type field uses only values from the PublicationType controlled vocabulary (recap, deep-dive, status-update, blog-post)
-  - The date field is an ISO 8601 date
-  - The sessions field is a list of paths to the session docs that were synthesized
+  - Frontmatter conforms to the Publication schema in the domain ontology
+  - The type field uses only values from the PublicationType controlled vocabulary
   - The body contains a prose narrative written for an outside audience
 ---
 
