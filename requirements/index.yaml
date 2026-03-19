@@ -1,0 +1,168 @@
+- id: dispatcher
+  title: Dispatcher
+  requirements:
+    - id: command-line-dispatch
+      title: Command-Line Dispatch
+      status: draft
+      invariants:
+        - Every Operator registered with the Dispatcher can be invoked from the
+          command line by name
+        - The Dispatcher provides a single entry point for dispatching Operations
+        - Dispatching an Operation causes its declared Effects to occur
+
+    - id: discoverability
+      title: Operation Discoverability
+      status: draft
+      invariants:
+        - Available Operations and their Operators are documented in a way that
+          is accessible to both humans and agents
+        - Agent instructions include how to dispatch Operations
+      notes:
+        - type: context
+          body: >-
+            This could be a README, a help command, or documentation in
+            CLAUDE.md. The mechanism is an implementation detail; the
+            requirement is that the information is findable.
+
+- id: auditor
+  title: Requirements Auditor
+  requirements:
+    - id: coverage
+      title: Audit Coverage
+      status: draft
+      invariants:
+        - Every registered Requirement receives a verdict (pass, fail, or unknown)
+          in every audit
+        - Every Artifact<AuditReport> contains a Verdict for every registered
+          Requirement
+
+    - id: read-only
+      title: Auditor Is Read-Only
+      status: draft
+      invariants:
+        - The Auditor does not modify any project or domain Repository files
+        - The only file the Auditor creates is its output artifact
+
+    - id: report-conformance
+      title: Audit Report Conformance
+      status: draft
+      invariants:
+        - Every Artifact<AuditReport> in the store conforms to the AuditReport
+          schema
+        - Every Verdict in an AuditReport includes at least one evidence string
+
+- id: assessments
+  title: Assessments
+  requirements:
+    - id: freshness
+      title: Assessment Freshness
+      status: draft
+      invariants:
+        - Every registered Requirement has at least one Artifact<Assessment>
+        - No current Assessment references a projectCommit or domainCommit more
+          than two generations behind HEAD of its respective Repository
+      notes:
+        - type: context
+          body: >-
+            "Current" means the most recent Artifact<Assessment> for a given
+            requirementId, as defined by the Assessment type. Historical
+            Assessments are retained but not subject to the freshness invariant.
+
+    - id: conformance
+      title: Assessment Conformance
+      status: draft
+      invariants:
+        - Every Artifact<Assessment> in the store conforms to the Assessment
+          schema
+        - Every Assessment references a valid commit hash from the implementation
+          and domain Repositories
+
+- id: builder
+  title: Builder
+  requirements:
+    - id: single-task
+      title: Single Task Scope
+      status: draft
+      invariants:
+        - Each invocation of the Builder addresses at most one failing Requirement
+        - Each build produces exactly one atomic commit
+
+    - id: traceability
+      title: Build Traceability
+      status: draft
+      invariants:
+        - Every Builder commit subject matches the format
+          "implements <requirement-id>"
+        - Every Builder commit body describes what was changed and why
+        - Every build produces an Artifact<BuildResult> linking the commit to the
+          Artifact<AuditReport> and Requirement that triggered it
+
+    - id: boundaries
+      title: Builder Boundaries
+      status: draft
+      invariants:
+        - The Builder does not modify domain Repository files (requirements,
+          ontology)
+        - The Builder does not act on an Artifact<AuditReport> that already has
+          a corresponding Artifact<BuildResult>
+        - If no Requirements are failing, the Builder exits cleanly without
+          making changes
+
+- id: build-loop
+  title: Build Loop
+  requirements:
+    - id: continuous-operation
+      title: Continuous Operation
+      status: draft
+      invariants:
+        - The system continuously audits and builds without manual intervention
+        - The latest Artifact<AuditReport> is newer than the most recent
+          implementation Repository commit if that commit is more than
+          20 minutes old
+        - All Requirements with status "active" have a passing Verdict in the
+          latest Artifact<AuditReport>
+      notes:
+        - type: caveat
+          body: >-
+            The "all active requirements pass" invariant describes the system's
+            target state, not a guarantee. A newly added Requirement will fail
+            until the Builder addresses it. The invariant is that the system
+            converges toward this state autonomously.
+
+    - id: change-detection
+      title: Change Detection
+      status: draft
+      invariants:
+        - The system does not re-audit when neither the implementation nor domain
+          Repository has new commits since the last audit
+
+- id: documentation-pipeline
+  title: Documentation Pipeline
+  requirements:
+    - id: transcript-capture
+      title: Transcript Capture
+      status: active
+      invariants:
+        - Session transcripts are automatically captured during interactive
+          SubagentType sessions
+        - Transcripts are not captured for autonomous SubagentTypes
+        - A pre-compaction snapshot is saved before context compaction occurs
+
+    - id: scribe
+      title: Scribe
+      status: active
+      invariants:
+        - Each invocation of the Scribe consumes one Transcript and produces
+          one Artifact<SessionDoc>
+        - Every Artifact<SessionDoc> conforms to the SessionDoc schema
+        - Scribe output is grounded in transcript content — no invented content
+
+    - id: herald
+      title: Herald
+      status: active
+      invariants:
+        - Each invocation of the Herald produces one Artifact<Publication>
+        - Every Artifact<Publication> conforms to the Publication schema
+        - Herald output is grounded in session documentation — no invented
+          content
+        - Publications are written for an outside audience
