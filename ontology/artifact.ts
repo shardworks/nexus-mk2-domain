@@ -50,6 +50,13 @@ export interface Artifact<T> {
 export interface ArtifactStore<T> {
   /** Which artifact type this store holds. */
   readonly artifactType: ArtifactTypeName;
+  /**
+   * Whether Artifacts in this store are persisted to durable storage
+   * (e.g., a git-backed artifacts Repository) that survives workspace
+   * teardown. Non-persistent stores use workspace-local storage and
+   * their contents are regenerable by the system.
+   */
+  readonly persistent: boolean;
 }
 
 /**

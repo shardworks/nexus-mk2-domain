@@ -14,8 +14,9 @@ export type {
   RepositoryType,
   NexusDomainRepository,
   NexusImplementationRepository,
+  NexusArtifactsRepository,
 } from "./repository.js";
-export { NEXUS_DOMAIN_REPO, NEXUS_IMPL_REPO } from "./repository.js";
+export { NEXUS_DOMAIN_REPO, NEXUS_IMPL_REPO, NEXUS_ARTIFACTS_REPO } from "./repository.js";
 
 export type {
   Effect,

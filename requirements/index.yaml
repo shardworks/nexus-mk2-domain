@@ -293,6 +293,26 @@
         - When no Artifacts of the requested type exist, the CLI exits with
           a non-zero status and a clear message
 
+    - id: store-artifact
+      title: Store Artifact
+      status: draft
+      invariants:
+        - The CLI accepts a JSON Artifact on stdin and stores it in the
+          appropriate ArtifactStore based on its type field
+        - The stored Artifact is retrievable via the show command using
+          its type and id
+        - The CLI validates that the input contains required Artifact
+          fields (type, id, createdAt, content) before storing
+
+    - id: exclusive-access
+      title: Exclusive Artifact Access
+      status: draft
+      invariants:
+        - All artifact reads and writes by agents go through the artifact
+          CLI — agents do not reference artifact storage paths directly
+        - Agent instructions reference artifact CLI commands, not
+          filesystem paths, for artifact operations
+
 - id: documentation-pipeline
   title: Documentation Pipeline
   requirements:

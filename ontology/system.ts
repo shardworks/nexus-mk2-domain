@@ -2,7 +2,7 @@
  * System — the top-level composition of a Nexus system.
  */
 
-import type { NexusDomainRepository, NexusImplementationRepository } from "./repository.js";
+import type { NexusDomainRepository, NexusImplementationRepository, NexusArtifactsRepository } from "./repository.js";
 import type { Auditor } from "./audit.js";
 import type { Builder } from "./builder.js";
 import type { Scribe, Herald } from "./documentation.js";
@@ -41,6 +41,7 @@ export interface NexusSystem {
   readonly repositories: {
     readonly domain: NexusDomainRepository;
     readonly implementation: NexusImplementationRepository;
+    readonly artifacts: NexusArtifactsRepository;
   };
   readonly stores: ArtifactStoreRegistry;
   readonly dispatcher: Dispatcher;

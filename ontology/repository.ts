@@ -25,8 +25,11 @@ export interface Repository {
  *   definitions. Read-only to agents.
  * - "implementation" — holds code, configuration, and agent definitions.
  *   Modified by builders and other agents.
+ * - "artifacts" — holds persistent Artifacts that must survive beyond
+ *   the current workspace. The artifact CLI handles sync to this
+ *   repository transparently.
  */
-export type RepositoryType = "domain" | "implementation";
+export type RepositoryType = "domain" | "implementation" | "artifacts";
 
 /**
  * The Nexus domain repository. Contains requirements and the ontology.
@@ -57,5 +60,25 @@ export interface NexusImplementationRepository extends Repository {
 export const NEXUS_IMPL_REPO = {
   name: "shardworks/nexus-mk2",
   type: "implementation",
+  product: "nexus",
+} as const satisfies Repository;
+
+/**
+ * The Nexus artifacts repository. Provides durable, git-backed storage
+ * for Artifacts whose value extends beyond the current workspace —
+ * transcripts, session docs, publications, and other persistent records.
+ *
+ * Ephemeral artifacts (audit reports, assessments, build results) are
+ * stored locally and do not use this repository.
+ */
+export interface NexusArtifactsRepository extends Repository {
+  readonly name: "shardworks/nexus-mk2-artifacts";
+  readonly type: "artifacts";
+  readonly product: "nexus";
+}
+
+export const NEXUS_ARTIFACTS_REPO = {
+  name: "shardworks/nexus-mk2-artifacts",
+  type: "artifacts",
   product: "nexus",
 } as const satisfies Repository;
