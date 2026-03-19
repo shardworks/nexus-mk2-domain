@@ -304,6 +304,33 @@
         - The artifact CLI does not require manual sync steps to access
           previously persisted Artifacts
 
+- id: environment
+  title: Runtime Environment
+  requirements:
+    - id: compliance
+      title: Environment Contract Compliance
+      status: draft
+      invariants:
+        - Implementations must not contain hardcoded values for anything
+          declared in NexusEnvironment — they must read from the
+          environment at runtime
+        - Agent instructions must not contain hardcoded values for
+          anything declared in NexusEnvironment — they must reference
+          environment variables by name
+      notes:
+        - type: rationale
+          body: >-
+            NexusEnvironment defines the runtime guarantees a workspace
+            provides. If an implementation hardcodes a path or URL that
+            the environment contract makes available as a variable, it
+            is coupled to a specific workspace layout rather than the
+            contract. This is incorrect even if it happens to work.
+        - type: context
+          body: >-
+            This requirement is global — it applies to all scripts,
+            agent instructions, and operator implementations, not to
+            a single feature.
+
 - id: documentation-pipeline
   title: Documentation Pipeline
   requirements:

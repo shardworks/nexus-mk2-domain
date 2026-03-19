@@ -30,6 +30,25 @@ Not yet proposing a structured acceptance type. Needs more concrete requirements
 
 The link between `"audit-report"` (the ArtifactTypeName string) and `AuditReport` (the TypeScript content type) is currently implicit — you have to look at the ArtifactStoreRegistry to see the connection. A type-level map (e.g., `{ "audit-report": AuditReport }`) could make this compile-time checkable, so that an Operation declaring `artifactType: "audit-report"` is statically linked to `Artifact<AuditReport>`. This would require mapped types, which were previously deferred. Revisit when we have a second artifact type.
 
+## Dynamic agent instructions (generated, not static)
+
+**Status:** backlogged (2026-03-19)
+
+Currently, agent instructions are static `.claude/agents/*.md` files. This creates a "update in two places" problem: when the environment contract, ontology, or system conventions change, both the implementation *and* the agent instructions need updating. The agent instructions are prose that can drift from the source of truth they paraphrase.
+
+Proposed direction: the scripts/tools that launch agents (e.g., `dispatch.sh`, loop scripts) generate appropriate instructions at launch time, assembling them from the ontology, environment contract, requirements, and operator-specific context. Static subagent files go away; the instructions become a derived artifact of the launch process.
+
+This would collapse several current pain points:
+- Agent instructions hardcoding values that belong in `NexusEnvironment`
+- Agent instructions referencing filesystem paths that should come from the artifact CLI
+- Agent instructions restating ontology definitions that could be included directly
+- Any future "keep instructions in sync with X" problem
+
+Open questions:
+- What's the right boundary between generated context and hand-authored operator personality/strategy?
+- Does this change the ontology's `Agent` concept, or just the implementation?
+- How does this interact with Claude Code's agent file format constraints?
+
 ## Future effect kinds
 
 **Status:** candidates identified (2026-03-19)
