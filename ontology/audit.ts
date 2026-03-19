@@ -7,12 +7,14 @@ import type { Operation, Operator } from "./operator.js";
 /**
  * The "audit" Operation evaluates the project against the Requirements
  * registry and deposits an Artifact<AuditReport> in the AuditReport
- * ArtifactStore.
+ * ArtifactStore and one Artifact<Assessment> per evaluated Requirement
+ * in the Assessment ArtifactStore.
  */
 export interface AuditOperation extends Operation {
   readonly name: "audit";
   readonly effects: readonly [
     { readonly kind: "produces"; readonly artifactType: "audit-report" },
+    { readonly kind: "produces"; readonly artifactType: "assessment" },
   ];
 }
 
