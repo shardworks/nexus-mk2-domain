@@ -248,6 +248,9 @@
           invokes the Builder to address one
         - The build loop respects feature locking — it does not invoke a
           Builder for a Feature that is already locked
+        - When multiple Assessments exist for the same Requirement, only the
+          most recent Assessment (by createdAt) is considered — older
+          Assessments for that Requirement are ignored
         - The build loop only acts on Assessments whose projectCommit matches
           the current implementation Repository HEAD — stale Assessments are
           skipped
