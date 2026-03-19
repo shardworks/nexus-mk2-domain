@@ -382,6 +382,37 @@
             agent instructions, and operator implementations, not to
             a single feature.
 
+- id: scribe-loop
+  title: Scribe Loop
+  requirements:
+    - id: reconciliation
+      title: Scribe Reconciliation
+      status: draft
+      invariants:
+        - Each invocation lists all Artifact<StagedTranscript> entries
+          via the artifact CLI and processes each one
+        - For each Artifact<StagedTranscript>, the loop dispatches the
+          Scribe to produce an Artifact<SessionDoc>, then performs
+          transcript ingestion
+        - If no Artifact<StagedTranscript> entries exist, the loop
+          exits cleanly without dispatching the Scribe
+      notes:
+        - type: context
+          body: >-
+            Unlike the audit and build loops, the scribe loop is
+            invoked on demand rather than running continuously.
+            Transcript capture is infrequent (only interactive
+            sessions) and does not require continuous polling.
+
+    - id: failure-isolation
+      title: Scribe Failure Isolation
+      status: draft
+      invariants:
+        - A failed Scribe invocation does not prevent processing of
+          remaining Artifact<StagedTranscript> entries
+        - Failed Artifact<StagedTranscript> entries are not deleted —
+          they remain in the staged-transcript store for retry
+
 - id: documentation-pipeline
   title: Documentation Pipeline
   requirements:
