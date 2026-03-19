@@ -30,6 +30,19 @@ Not yet proposing a structured acceptance type. Needs more concrete requirements
 
 The link between `"audit-report"` (the ArtifactTypeName string) and `AuditReport` (the TypeScript content type) is currently implicit — you have to look at the ArtifactStoreRegistry to see the connection. A type-level map (e.g., `{ "audit-report": AuditReport }`) could make this compile-time checkable, so that an Operation declaring `artifactType: "audit-report"` is statically linked to `Artifact<AuditReport>`. This would require mapped types, which were previously deferred. Revisit when we have a second artifact type.
 
+## Artifact metadata and query capabilities
+
+**Status:** backlogged (2026-03-19)
+
+The artifact CLI only exposes `id`, `createdAt`, and `type` in list output. Consumers that need to find artifacts by content properties (e.g., "the assessment for requirement X" or "the build result for commit Y") must list all artifacts and read each one. This is wasteful — especially for agents paying per-token.
+
+Possible directions:
+- Add queryable metadata fields to list output (e.g., `requirementId` for assessments, `commitHash` for build results)
+- Add a `query` subcommand that filters by content fields
+- Add an index/manifest that maps key fields to artifact IDs
+
+The right approach depends on how artifact access patterns evolve. Backlogged until the cost is more clearly felt.
+
 ## Dynamic agent instructions (generated, not static)
 
 **Status:** backlogged (2026-03-19)

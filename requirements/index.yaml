@@ -29,12 +29,27 @@
   requirements:
     - id: coverage
       title: Audit Coverage
-      status: draft
+      status: deprecated
       invariants:
         - Every registered Requirement receives a verdict (pass, fail, or unknown)
           in every audit
         - Every Artifact<AuditReport> contains a Verdict for every registered
           Requirement
+      notes:
+        - type: caveat
+          body: >-
+            Deprecated. Superseded by auditor/single-requirement — the
+            Auditor evaluates one Requirement per invocation rather than
+            producing a comprehensive report.
+
+    - id: single-requirement
+      title: Single Requirement Scope
+      status: draft
+      invariants:
+        - Each invocation of the Auditor evaluates exactly one Requirement
+        - Each invocation produces exactly one Artifact<Assessment>
+        - The Auditor receives the Requirement to evaluate as input — it
+          does not select requirements or check for staleness
 
     - id: read-only
       title: Auditor Is Read-Only
@@ -45,19 +60,27 @@
 
     - id: report-conformance
       title: Audit Report Conformance
-      status: draft
+      status: deprecated
       invariants:
         - Every Artifact<AuditReport> in the store conforms to the AuditReport
           schema
         - Every Verdict in an AuditReport includes at least one evidence string
+      notes:
+        - type: caveat
+          body: >-
+            Deprecated. The Auditor no longer produces Artifact<AuditReport>.
+            Assessments are the primary audit output. Evidence requirements
+            are covered by assessments/conformance.
 
     - id: assessment-production
       title: Assessment Production
       status: draft
       invariants:
-        - Every audit produces one Artifact<Assessment> per evaluated Requirement
-        - Each Assessment records the current implementation and domain Repository
-          HEAD commit hashes at the time of evaluation
+        - The Assessment produced by each invocation records the current
+          implementation and domain Repository HEAD commit hashes at the
+          time of evaluation
+        - The Assessment's requirementId matches the Requirement the
+          Auditor was invoked to evaluate
 
 - id: assessments
   title: Assessments
@@ -139,10 +162,28 @@
       status: draft
       invariants:
         - The audit loop runs continuously without manual intervention
-        - Each iteration identifies requirements with stale or missing
-          Assessments and reassesses only those
-        - After each iteration, every reassessed requirement has an Assessment
-          whose projectCommit and domainCommit match the current HEAD
+        - Each iteration identifies one Requirement with a stale or missing
+          Assessment and dispatches the Auditor to evaluate it
+        - After each Auditor invocation, the evaluated Requirement has a
+          current Assessment whose projectCommit and domainCommit match
+          the current HEAD
+
+    - id: priority
+      title: Assessment Priority
+      status: draft
+      invariants:
+        - Requirements with no existing Assessment are evaluated before
+          Requirements with a stale passing Assessment
+        - Requirements whose most recent Assessment has result fail are
+          evaluated before Requirements with a stale passing Assessment
+      notes:
+        - type: rationale
+          body: >-
+            New requirements and known failures are more likely to have
+            actionable outcomes. Prioritizing them over re-checking
+            previously passing requirements reduces time to first
+            Assessment for new work and keeps the build loop fed with
+            current failure data.
 
     - id: hot-reload
       title: Audit Loop Hot Reload

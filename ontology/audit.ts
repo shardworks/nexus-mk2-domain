@@ -5,15 +5,13 @@
 import type { Operation, Operator } from "./operator.js";
 
 /**
- * The "audit" Operation evaluates the project against the Requirements
- * registry and deposits an Artifact<AuditReport> in the AuditReport
- * ArtifactStore and one Artifact<Assessment> per evaluated Requirement
+ * The "audit" Operation evaluates a single Requirement against the
+ * current state of the project and deposits one Artifact<Assessment>
  * in the Assessment ArtifactStore.
  */
 export interface AuditOperation extends Operation {
   readonly name: "audit";
   readonly effects: readonly [
-    { readonly kind: "produces"; readonly artifactType: "audit-report" },
     { readonly kind: "produces"; readonly artifactType: "assessment" },
   ];
 }
@@ -75,10 +73,9 @@ export type VerdictResult = "pass" | "fail" | "unknown";
  * compliance state. All other Assessments for the same requirementId
  * are historical.
  *
- * Assessments and AuditReports serve complementary roles: Assessments
- * are the fine-grained, per-requirement source of truth that supports
- * incremental updates. AuditReports are periodic snapshots that
- * summarize overall system health at a point in time.
+ * Assessments are the primary audit output — the per-requirement
+ * source of truth for compliance state. System health is derived
+ * by querying the set of current Assessments.
  */
 export interface Assessment {
   /**
