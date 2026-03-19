@@ -430,6 +430,8 @@
         - Transcripts are not captured for autonomous SubagentTypes
         - Captured transcripts are stored as Artifact<StagedTranscript> via
           the artifact CLI
+        - The Artifact<StagedTranscript> body contains the raw JSONL
+          transcript content
         - The stop hook stores one Artifact<StagedTranscript> with
           captureType "primary" per session
         - The pre-compact hook stores one Artifact<StagedTranscript> with
@@ -443,6 +445,8 @@
           Artifact<StagedTranscript> entries for that session are
           promoted to durable Artifact<Transcript> entries via the
           artifact CLI
+        - The Artifact<Transcript> body preserves the raw JSONL content
+          from the Artifact<StagedTranscript> it was promoted from
         - The original Artifact<StagedTranscript> entries are deleted
           after successful ingestion
         - Only Artifact<StagedTranscript> entries are candidates for

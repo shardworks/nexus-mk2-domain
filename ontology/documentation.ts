@@ -32,6 +32,8 @@ export interface StagedTranscript {
    * pre-compaction snapshot taken before context was summarized.
    */
   readonly captureType: StagedTranscriptCaptureType;
+  /** The raw JSONL transcript content captured from the session. */
+  readonly body: string;
 }
 
 /**
@@ -53,6 +55,8 @@ export type StagedTranscriptCaptureType = "primary" | "precompact";
 export interface Transcript {
   /** Identifier of the session that produced this transcript. */
   readonly sessionId: string;
+  /** The raw JSONL transcript content from the session. */
+  readonly body: string;
 }
 
 // ─── Scribe ────────────────────────────────────────────────
