@@ -41,7 +41,7 @@
       status: draft
       invariants:
         - The Auditor does not modify any project or domain Repository files
-        - The only file the Auditor creates is its output artifact
+        - The only files the Auditor creates are its output artifacts
 
     - id: report-conformance
       title: Audit Report Conformance
@@ -51,6 +51,21 @@
           schema
         - Every Verdict in an AuditReport includes at least one evidence string
 
+    - id: assessment-production
+      title: Assessment Production
+      status: draft
+      invariants:
+        - Every audit produces one Artifact<Assessment> per evaluated Requirement
+        - Each Assessment records the current implementation and domain Repository
+          HEAD commit hashes at the time of evaluation
+      notes:
+        - type: context
+          body: >-
+            Assessments are the per-requirement, commit-anchored complement to
+            the bulk AuditReport. The Auditor produces both: an AuditReport for
+            summary consumption, and individual Assessments for freshness
+            tracking and incremental reassessment.
+
 - id: assessments
   title: Assessments
   requirements:
@@ -59,14 +74,17 @@
       status: draft
       invariants:
         - Every registered Requirement has at least one Artifact<Assessment>
-        - No current Assessment references a projectCommit or domainCommit more
-          than two generations behind HEAD of its respective Repository
+        - An Assessment is stale when its projectCommit or domainCommit does
+          not match the current HEAD of the respective Repository
+        - Stale Assessments are reassessed in the next audit cycle
       notes:
         - type: context
           body: >-
             "Current" means the most recent Artifact<Assessment> for a given
-            requirementId, as defined by the Assessment type. Historical
-            Assessments are retained but not subject to the freshness invariant.
+            requirementId. A stale Assessment triggers reassessment — the
+            auditor must produce a fresh Assessment against the current HEAD.
+            Historical Assessments are retained but not subject to the
+            freshness invariant.
 
     - id: conformance
       title: Assessment Conformance
@@ -108,6 +126,25 @@
         - If no Requirements are failing, the Builder exits cleanly without
           making changes
 
+    - id: feature-locking
+      title: Feature Locking
+      status: draft
+      invariants:
+        - At most one Builder instance is implementing changes for a given
+          Feature at any time
+        - A Builder must acquire a lock on a Feature before beginning work and
+          release it when its commit is complete
+        - If a Feature lock is held by another Builder, the Builder selects a
+          different failing Requirement from an unlocked Feature or exits
+          cleanly
+      notes:
+        - type: rationale
+          body: >-
+            Requirements within the same Feature tend to touch overlapping
+            files. Allowing concurrent Builders on the same Feature creates
+            merge conflicts. Feature-level locking serializes work within a
+            Feature while allowing parallelism across Features.
+
 - id: build-loop
   title: Build Loop
   requirements:
@@ -135,6 +172,40 @@
       invariants:
         - The system does not re-audit when neither the implementation nor domain
           Repository has new commits since the last audit
+
+- id: artifact-cli
+  title: Artifact CLI
+  requirements:
+    - id: list-artifacts
+      title: List Artifacts
+      status: draft
+      invariants:
+        - The CLI can list all Artifacts of a given ArtifactTypeName
+        - Listed Artifacts are displayed with their id, createdAt, and type
+        - Results are ordered by createdAt descending (most recent first)
+      notes:
+        - type: context
+          body: >-
+            This is the primary tool for humans and agents to discover what
+            Artifacts exist without knowing the storage layout. The storage
+            mechanism is an implementation detail — the CLI abstracts over it.
+
+    - id: show-artifact
+      title: Show Artifact
+      status: draft
+      invariants:
+        - The CLI can display the full content of an Artifact given its type
+          and id
+        - Output is valid JSON matching the Artifact schema for that type
+
+    - id: latest-artifact
+      title: Latest Artifact
+      status: draft
+      invariants:
+        - The CLI can retrieve the most recent Artifact of a given
+          ArtifactTypeName
+        - When no Artifacts of the requested type exist, the CLI exits with
+          a non-zero status and a clear message
 
 - id: documentation-pipeline
   title: Documentation Pipeline
