@@ -58,13 +58,6 @@
         - Every audit produces one Artifact<Assessment> per evaluated Requirement
         - Each Assessment records the current implementation and domain Repository
           HEAD commit hashes at the time of evaluation
-      notes:
-        - type: context
-          body: >-
-            Assessments are the per-requirement, commit-anchored complement to
-            the bulk AuditReport. The Auditor produces both: an AuditReport for
-            summary consumption, and individual Assessments for freshness
-            tracking and incremental reassessment.
 
 - id: assessments
   title: Assessments
@@ -77,14 +70,6 @@
         - An Assessment is stale when its projectCommit or domainCommit does
           not match the current HEAD of the respective Repository
         - Stale Assessments are reassessed in the next audit cycle
-      notes:
-        - type: context
-          body: >-
-            "Current" means the most recent Artifact<Assessment> for a given
-            requirementId. A stale Assessment triggers reassessment — the
-            auditor must produce a fresh Assessment against the current HEAD.
-            Historical Assessments are retained but not subject to the
-            freshness invariant.
 
     - id: conformance
       title: Assessment Conformance
@@ -158,13 +143,6 @@
           Assessments and reassesses only those
         - After each iteration, every reassessed requirement has an Assessment
           whose projectCommit and domainCommit match the current HEAD
-      notes:
-        - type: context
-          body: >-
-            The audit loop is a reconciliation loop. Its desired state is:
-            every requirement has a current Assessment. Each iteration
-            computes the delta (stale or missing Assessments) and acts on it.
-            When all Assessments are current, the loop idles.
 
     - id: hot-reload
       title: Audit Loop Hot Reload
@@ -228,12 +206,6 @@
           the current implementation Repository HEAD — stale Assessments are
           skipped
       notes:
-        - type: context
-          body: >-
-            The build loop is a reconciliation loop. Its desired state is:
-            every requirement has a passing Assessment. Each iteration
-            computes the delta (failing Assessments) and acts on it.
-            When all Assessments pass, the loop idles.
         - type: rationale
           body: >-
             Because audit and build run concurrently, an Assessment's
@@ -269,12 +241,6 @@
         - The CLI can list all Artifacts of a given ArtifactTypeName
         - Listed Artifacts are displayed with their id, createdAt, and type
         - Results are ordered by createdAt descending (most recent first)
-      notes:
-        - type: context
-          body: >-
-            This is the primary tool for humans and agents to discover what
-            Artifacts exist without knowing the storage layout. The storage
-            mechanism is an implementation detail — the CLI abstracts over it.
 
     - id: show-artifact
       title: Show Artifact
@@ -312,6 +278,31 @@
           CLI — agents do not reference artifact storage paths directly
         - Agent instructions reference artifact CLI commands, not
           filesystem paths, for artifact operations
+
+- id: artifact-persistence
+  title: Artifact Persistence
+  requirements:
+    - id: durable-storage
+      title: Durable Artifact Storage
+      status: draft
+      invariants:
+        - Artifacts stored in a persistent ArtifactStore are committed and
+          pushed to the NexusArtifactsRepository by the artifact CLI as
+          part of the store operation
+        - Artifacts in the NexusArtifactsRepository survive workspace
+          teardown and are available in subsequent workspaces
+        - Artifacts stored in a non-persistent ArtifactStore are written to
+          workspace-local storage only
+
+    - id: restoration
+      title: Artifact Restoration
+      status: draft
+      invariants:
+        - When a workspace starts, persistent Artifacts from the
+          NexusArtifactsRepository are available to the artifact CLI
+          for retrieval
+        - The artifact CLI does not require manual sync steps to access
+          previously persisted Artifacts
 
 - id: documentation-pipeline
   title: Documentation Pipeline
