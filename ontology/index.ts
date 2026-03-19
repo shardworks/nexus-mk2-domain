@@ -44,7 +44,6 @@ export type {
 
 export type {
   Transcript,
-  TranscriptStatus,
   ScribeOperation,
   Scribe,
   SessionDoc,

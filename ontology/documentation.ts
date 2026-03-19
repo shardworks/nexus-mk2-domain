@@ -7,22 +7,20 @@ import type { Operation, Operator } from "./operator.js";
 // ─── Transcript ─────────────────────────────────────────────
 
 /**
- * A Transcript is a raw capture of a Claude Code session. It is
- * produced by hooks during interactive Agent sessions and consumed by
- * Scribe for synthesis into structured SessionDocs.
+ * A Transcript is a raw capture of a Claude Code session.
  *
- * The transcript content is the raw session data (JSONL format).
- * The Transcript type captures metadata about the capture, not
- * the content itself — the content is the artifact's storage payload.
+ * Transcripts follow a staged lifecycle: hooks capture raw session
+ * data (JSONL) to a workspace-local staging directory during
+ * interactive sessions. After the Scribe produces an
+ * Artifact<SessionDoc>, the raw transcript is ingested as an
+ * Artifact<Transcript> for durable storage. Whether a transcript
+ * has been processed is not tracked explicitly — it is determined
+ * by whether an Artifact<Transcript> exists for it.
  */
 export interface Transcript {
   /** Identifier of the session that produced this transcript. */
   readonly sessionId: string;
-  /** Whether the transcript is awaiting processing or has been processed. */
-  readonly status: TranscriptStatus;
 }
-
-export type TranscriptStatus = "pending" | "archived";
 
 // ─── Scribe ────────────────────────────────────────────────
 
