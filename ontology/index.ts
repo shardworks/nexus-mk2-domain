@@ -43,6 +43,7 @@ export type {
 } from "./builder.js";
 
 export type {
+  StagedTranscript,
   Transcript,
   ScribeOperation,
   Scribe,

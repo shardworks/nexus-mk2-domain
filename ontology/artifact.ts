@@ -4,7 +4,7 @@
 
 import type { AuditReport, Assessment } from "./audit.js";
 import type { BuildResult } from "./builder.js";
-import type { Transcript, SessionDoc, Publication } from "./documentation.js";
+import type { StagedTranscript, Transcript, SessionDoc, Publication } from "./documentation.js";
 
 /**
  * The fixed set of Artifact types in the system. Each name corresponds
@@ -14,15 +14,16 @@ export type ArtifactTypeName =
   | "audit-report"
   | "assessment"
   | "build-result"
+  | "staged-transcript"
   | "transcript"
   | "session-doc"
   | "publication";
 
 /**
- * An Artifact is a typed, persistent record produced by an Operation.
- * It wraps a domain data type (like AuditReport) with identity and
- * metadata. An Artifact outlives the Operation that created it and
- * is retrievable from its ArtifactStore.
+ * An Artifact is a typed record produced by an Operation. It wraps a
+ * domain data type (like AuditReport) with identity and metadata.
+ * An Artifact is retrievable from its ArtifactStore. Whether it
+ * survives workspace teardown depends on the store's persistence flag.
  */
 export interface Artifact<T> {
   /** Discriminator identifying which domain type this artifact wraps. */
@@ -68,6 +69,7 @@ export interface ArtifactStoreRegistry {
   readonly auditReport: ArtifactStore<AuditReport>;
   readonly assessment: ArtifactStore<Assessment>;
   readonly buildResult: ArtifactStore<BuildResult>;
+  readonly stagedTranscript: ArtifactStore<StagedTranscript>;
   readonly transcript: ArtifactStore<Transcript>;
   readonly sessionDoc: ArtifactStore<SessionDoc>;
   readonly publication: ArtifactStore<Publication>;

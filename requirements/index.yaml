@@ -311,6 +311,16 @@
         - The CLI validates that the input contains required Artifact
           fields (type, id, createdAt, content) before storing
 
+    - id: delete-artifact
+      title: Delete Artifact
+      status: draft
+      invariants:
+        - The CLI can delete an Artifact given its type and id
+        - After deletion, the Artifact is no longer retrievable via
+          show, list, or latest
+        - Deletion of a non-existent Artifact exits with a non-zero
+          status and a clear message
+
     - id: exclusive-access
       title: Exclusive Artifact Access
       status: draft
@@ -383,38 +393,36 @@
           SubagentType sessions
         - Transcripts are not captured for autonomous SubagentTypes
         - A pre-compaction snapshot is saved before context compaction occurs
-        - Raw transcripts are written to a staging directory derived from
-          NEXUS_TEMP_DIR — hooks do not write directly to the
-          NexusArtifactsRepository or use the artifact CLI
+        - Captured transcripts are stored as Artifact<StagedTranscript> via
+          the artifact CLI
 
     - id: transcript-ingestion
       title: Transcript Ingestion
       status: draft
       invariants:
-        - After a Scribe invocation produces an Artifact<SessionDoc>, the
-          corresponding raw transcript is stored as an Artifact<Transcript>
-          via the artifact CLI
-        - Raw transcripts are removed from the staging directory after
+        - After the Scribe produces an Artifact<SessionDoc>, the
+          corresponding Artifact<StagedTranscript> is promoted to a
+          durable Artifact<Transcript> via the artifact CLI
+        - The original Artifact<StagedTranscript> is deleted after
           successful ingestion
-        - Only raw transcripts in the staging directory are candidates for
-          processing — the staging directory is the sole queue of unprocessed
-          transcripts
+        - Only Artifact<StagedTranscript> entries are candidates for
+          processing — the staged-transcript store is the sole queue
+          of unprocessed transcripts
       notes:
         - type: rationale
           body: >-
-            Hooks must be fast and reliable, so they write raw files to
-            local staging rather than going through the artifact CLI
-            (which may involve git operations). The scribe workflow
-            handles both synthesis and ingestion, ensuring the transcript
-            becomes a durable Artifact only after it has been
-            successfully processed.
+            The staged-transcript store is non-persistent (workspace-local),
+            so hooks can write quickly without git operations. The scribe
+            workflow promotes the raw transcript to durable storage only
+            after it has been successfully processed, ensuring the
+            persistent transcript store contains only completed work.
 
     - id: scribe
       title: Scribe
       status: active
       invariants:
-        - Each invocation of the Scribe consumes one raw transcript and
-          produces one Artifact<SessionDoc>
+        - Each invocation of the Scribe consumes one Artifact<StagedTranscript>
+          and produces one Artifact<SessionDoc>
         - Every Artifact<SessionDoc> conforms to the SessionDoc schema
         - Scribe output is grounded in transcript content — no invented content
 

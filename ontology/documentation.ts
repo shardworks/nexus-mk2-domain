@@ -7,15 +7,26 @@ import type { Operation, Operator } from "./operator.js";
 // ─── Transcript ─────────────────────────────────────────────
 
 /**
- * A Transcript is a raw capture of a Claude Code session.
+ * A StagedTranscript is a raw capture of a Claude Code session that
+ * has not yet been processed by the Scribe. Hooks deposit these
+ * during interactive sessions. The StagedTranscript ArtifactStore
+ * is non-persistent (workspace-local only), so writes are fast
+ * and do not involve git operations.
  *
- * Transcripts follow a staged lifecycle: hooks capture raw session
- * data (JSONL) to a workspace-local staging directory during
- * interactive sessions. After the Scribe produces an
- * Artifact<SessionDoc>, the raw transcript is ingested as an
- * Artifact<Transcript> for durable storage. Whether a transcript
- * has been processed is not tracked explicitly — it is determined
- * by whether an Artifact<Transcript> exists for it.
+ * Once the Scribe processes a staged transcript and produces an
+ * Artifact<SessionDoc>, the raw content is promoted to a durable
+ * Artifact<Transcript> and the staged artifact is deleted.
+ */
+export interface StagedTranscript {
+  /** Identifier of the session that produced this transcript. */
+  readonly sessionId: string;
+}
+
+/**
+ * A Transcript is a raw capture of a Claude Code session that has
+ * been processed by the Scribe. It is the durable record of the
+ * session's raw data, stored persistently in the
+ * NexusArtifactsRepository.
  */
 export interface Transcript {
   /** Identifier of the session that produced this transcript. */
@@ -25,15 +36,16 @@ export interface Transcript {
 // ─── Scribe ────────────────────────────────────────────────
 
 /**
- * The "scribe" Operation consumes a Transcript artifact and synthesizes
- * it into a structured SessionDoc, deposited in the SessionDoc
- * ArtifactStore.
+ * The "scribe" Operation consumes a StagedTranscript, synthesizes it
+ * into a structured SessionDoc, and promotes the raw transcript to
+ * durable storage. The staged artifact is deleted after processing.
  */
 export interface ScribeOperation extends Operation {
   readonly name: "scribe";
   readonly effects: readonly [
-    { readonly kind: "consumes"; readonly artifactType: "transcript" },
+    { readonly kind: "consumes"; readonly artifactType: "staged-transcript" },
     { readonly kind: "produces"; readonly artifactType: "session-doc" },
+    { readonly kind: "produces"; readonly artifactType: "transcript" },
   ];
 }
 
