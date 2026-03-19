@@ -361,6 +361,23 @@
         - Agent instructions reference artifact CLI commands, not
           filesystem paths, for artifact operations
 
+    - id: api-surface
+      title: CLI API Surface
+      status: active
+      invariants:
+        - The artifact CLI exposes exactly five subcommands — list, show,
+          latest, store, and delete
+        - No other subcommands exist in the CLI
+      notes:
+        - type: rationale
+          body: >-
+            The five subcommands are the complete interface for artifact
+            CRUD. Any higher-level workflow (e.g., capturing a transcript,
+            promoting staged artifacts) belongs in the calling script, not
+            in the CLI itself. Keeping the CLI surface minimal prevents it
+            from accumulating domain-specific logic that couples it to
+            individual artifact types.
+
 - id: artifact-persistence
   title: Artifact Persistence
   requirements:
