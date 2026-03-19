@@ -190,7 +190,6 @@ export interface Requirement {
   readonly id: string;
   readonly title: string;
   readonly status: RequirementStatus;
-  readonly priority: RequirementPriority;
 
   /** The full prose description of the requirement. */
   readonly body: string;
@@ -199,4 +198,3 @@ export interface Requirement {
 }
 
 export type RequirementStatus = "draft" | "active" | "deprecated";
-export type RequirementPriority = "high" | "medium" | "low";

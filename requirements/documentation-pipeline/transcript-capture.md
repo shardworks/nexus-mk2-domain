@@ -1,7 +1,6 @@
 ---
 title: Transcript Capture
-status: draft
-priority: high
+status: active
 acceptance:
   - An on_stop hook copies the session transcript to the pending transcripts directory on each response
   - An on_pre_compact hook saves a pre-compaction snapshot before context compaction occurs

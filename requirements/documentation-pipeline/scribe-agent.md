@@ -1,7 +1,6 @@
 ---
 title: Scribe Agent
-status: draft
-priority: high
+status: active
 acceptance:
   - A scribe agent exists that reads raw session transcripts in JSONL format
   - Scribe produces a single structured markdown session doc per transcript

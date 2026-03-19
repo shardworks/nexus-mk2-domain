@@ -1,7 +1,6 @@
 ---
 title: Auditor Is Invokable
 status: draft
-priority: high
 acceptance:
   - A shell script exists at bin/audit.sh that triggers an audit
   - Running the script produces an audit report without manual intervention

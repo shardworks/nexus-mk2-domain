@@ -1,7 +1,6 @@
 ---
 title: Documentation Pipeline
-status: draft
-priority: high
+status: active
 acceptance:
   - Session transcripts are automatically captured during human-facing agent sessions
   - Captured transcripts can be processed into structured session documentation

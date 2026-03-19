@@ -1,7 +1,6 @@
 ---
 title: Requirements Auditor
 status: draft
-priority: high
 acceptance:
   - An auditor agent exists that can read the requirements registry
   - The auditor evaluates every registered requirement regardless of status

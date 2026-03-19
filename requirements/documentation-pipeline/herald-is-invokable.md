@@ -1,7 +1,6 @@
 ---
 title: Herald Is Invokable
-status: draft
-priority: high
+status: active
 acceptance:
   - A shell script exists at bin/herald.sh that invokes herald with a freeform prompt
   - bin/herald.sh accepts a single string argument describing what to produce

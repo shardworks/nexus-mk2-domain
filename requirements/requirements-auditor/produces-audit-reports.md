@@ -1,7 +1,6 @@
 ---
 title: Produces Audit Reports
 status: draft
-priority: high
 acceptance:
   - The auditor produces an Artifact of type "audit-report"
   - The artifact conforms to the Artifact<AuditReport> schema defined in the domain ontology

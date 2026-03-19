@@ -1,7 +1,6 @@
 ---
 title: Herald Agent
-status: draft
-priority: high
+status: active
 acceptance:
   - A herald agent exists that reads structured session documentation
   - Herald produces outward-facing markdown narratives (blog posts, recaps, deep-dives, status updates)

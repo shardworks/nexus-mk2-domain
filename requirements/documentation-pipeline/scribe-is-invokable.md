@@ -1,7 +1,6 @@
 ---
 title: Scribe Is Invokable
-status: draft
-priority: high
+status: active
 acceptance:
   - A shell script exists at bin/scribe.sh that invokes scribe for a single transcript
   - bin/scribe.sh accepts a primary transcript path and optional pre-compaction snapshot paths
