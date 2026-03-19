@@ -224,6 +224,9 @@
           invokes the Builder to address one
         - The build loop respects feature locking — it does not invoke a
           Builder for a Feature that is already locked
+        - The build loop only acts on Assessments whose projectCommit matches
+          the current implementation Repository HEAD — stale Assessments are
+          skipped
       notes:
         - type: context
           body: >-
@@ -231,6 +234,14 @@
             every requirement has a passing Assessment. Each iteration
             computes the delta (failing Assessments) and acts on it.
             When all Assessments pass, the loop idles.
+        - type: rationale
+          body: >-
+            Because audit and build run concurrently, an Assessment's
+            projectCommit may refer to an earlier commit than the current
+            HEAD. Acting on such an Assessment risks redundant or conflicting
+            builds — the code may already satisfy the Requirement. The
+            commit-gating invariant ensures builders only act on Assessments
+            that reflect the current state of the codebase.
 
     - id: hot-reload
       title: Build Loop Hot Reload
