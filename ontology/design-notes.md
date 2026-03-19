@@ -157,8 +157,9 @@ The ontology says what an operator is *designed to do*. The Dispatcher (or invoc
 
 | Kind | Meaning | Metadata | Example |
 |------|---------|----------|---------|
-| **consumes** | Reads from a managed ArtifactStore | `artifactType: ArtifactTypeName` | builder consumes audit-report |
-| **produces** | Deposits a new Artifact into an ArtifactStore | `artifactType: ArtifactTypeName` | auditor produces audit-report |
+| **consumes** | Reads from a managed ArtifactStore | `artifactType: ArtifactTypeName` | builder consumes assessment |
+| **produces** | Deposits a new Artifact into an ArtifactStore | `artifactType: ArtifactTypeName` | auditor produces assessment |
+| **deletes** | Removes an Artifact from an ArtifactStore | `artifactType: ArtifactTypeName` | scribe deletes staged-transcript |
 | **implements** | Changes a codebase in response to requirements | *(none — target is runtime)* | builder implements |
 
 ### Future Effect Candidates
@@ -172,20 +173,24 @@ Implementation-specific details (file format, storage path, process mechanics) b
 
 ### The Data Flow Graph
 
-With `consumes` and `produces` declared on every operation, the system's artifact flow is fully traceable:
+With effects declared on every operation, the system's artifact flow is fully traceable:
 
 ```
-[hooks] ──produces──→ Transcript
+[hooks] ──produces──→ StagedTranscript
                           │
                        consumes
                           ↓
                        Scribe ──produces──→ SessionDoc
-                                               │
-                                            consumes
-                                               ↓
-                                            Herald ──produces──→ Publication
+                          │        │
+                       deletes  produces
+                          ↓        ↓
+               (StagedTranscript   Transcript
+                 removed)             │
+                                   consumes
+                                      ↓
+                                   Herald ──produces──→ Publication
 
-                       Auditor ──produces──→ AuditReport
+                       Auditor ──produces──→ Assessment
                                                 │
                                              consumes
                                                 ↓
@@ -232,7 +237,7 @@ We don't need to commit to the structured form yet. But the observation is: **th
 
 ### Current Status
 
-The following are **formalized in `index.ts`**: Effect (ConsumesEffect, ProducesEffect, ImplementsEffect), Operation, Operator, Auditor (AuditOperation), Scribe (ScribeOperation), Herald (HeraldOperation), Builder (BuildOperation), Transcript, Dispatcher, Artifact, ArtifactTypeName, ArtifactStore, ArtifactStoreRegistry, Agent, Requirement.
+The following are **formalized in `index.ts`**: Effect (ConsumesEffect, ProducesEffect, DeletesEffect, ImplementsEffect), Operation, Operator, Auditor (AuditOperation), Scribe (ScribeOperation), Herald (HeraldOperation), Builder (BuildOperation), StagedTranscript, Transcript, Dispatcher, Artifact, ArtifactTypeName, ArtifactStore, ArtifactStoreRegistry, Agent, Requirement.
 
 ### Open Questions
 

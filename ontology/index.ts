@@ -22,6 +22,7 @@ export type {
   Effect,
   ConsumesEffect,
   ProducesEffect,
+  DeletesEffect,
   ImplementsEffect,
   Operation,
   Operator,

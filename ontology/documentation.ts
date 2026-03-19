@@ -46,6 +46,7 @@ export interface ScribeOperation extends Operation {
     { readonly kind: "consumes"; readonly artifactType: "staged-transcript" },
     { readonly kind: "produces"; readonly artifactType: "session-doc" },
     { readonly kind: "produces"; readonly artifactType: "transcript" },
+    { readonly kind: "deletes"; readonly artifactType: "staged-transcript" },
   ];
 }
 

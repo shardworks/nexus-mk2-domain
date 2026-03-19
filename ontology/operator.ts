@@ -14,7 +14,7 @@ import type { ArtifactTypeName } from "./artifact.js";
  * relationship to core domain concepts. Generic effects are appropriate
  * when the domain doesn't ascribe special meaning to the action.
  */
-export type Effect = ConsumesEffect | ProducesEffect | ImplementsEffect;
+export type Effect = ConsumesEffect | ProducesEffect | DeletesEffect | ImplementsEffect;
 
 /**
  * A "consumes" Effect declares that an Operation reads from a managed
@@ -40,6 +40,19 @@ export interface ConsumesEffect {
 export interface ProducesEffect {
   readonly kind: "produces";
   /** The type of artifact this operation creates. */
+  readonly artifactType: ArtifactTypeName;
+}
+
+/**
+ * A "deletes" Effect indicates that an Operation removes an Artifact
+ * of the specified type from its ArtifactStore. This is the counterpart
+ * to "produces" — where "produces" adds to a store, "deletes" removes
+ * from it. Typically used when an artifact has been consumed and
+ * promoted to a different store (e.g., staged-transcript → transcript).
+ */
+export interface DeletesEffect {
+  readonly kind: "deletes";
+  /** The type of artifact this operation removes. */
   readonly artifactType: ArtifactTypeName;
 }
 
