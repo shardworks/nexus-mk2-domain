@@ -113,7 +113,7 @@
           "implements <requirement-id>"
         - Every Builder commit body describes what was changed and why
         - Every build produces an Artifact<BuildResult> linking the commit to the
-          Artifact<AuditReport> and Requirement that triggered it
+          Artifact<Assessment> and Requirement that triggered it
 
     - id: boundaries
       title: Builder Boundaries
@@ -121,9 +121,10 @@
       invariants:
         - The Builder does not modify domain Repository files (requirements,
           ontology)
-        - The Builder does not act on an Artifact<AuditReport> that already has
+        - The Builder only acts on current Assessments where result is fail
+        - The Builder does not act on an Artifact<Assessment> that already has
           a corresponding Artifact<BuildResult>
-        - If no Requirements are failing, the Builder exits cleanly without
+        - If no Assessments are failing, the Builder exits cleanly without
           making changes
 
     - id: feature-locking
@@ -145,12 +146,48 @@
             merge conflicts. Feature-level locking serializes work within a
             Feature while allowing parallelism across Features.
 
+- id: audit-loop
+  title: Audit Loop
+  requirements:
+    - id: reconciliation
+      title: Audit Reconciliation
+      status: draft
+      invariants:
+        - The audit loop runs continuously without manual intervention
+        - Each iteration identifies requirements with stale or missing
+          Assessments and reassesses only those
+        - After each iteration, every reassessed requirement has an Assessment
+          whose projectCommit and domainCommit match the current HEAD
+      notes:
+        - type: context
+          body: >-
+            The audit loop is a reconciliation loop. Its desired state is:
+            every requirement has a current Assessment. Each iteration
+            computes the delta (stale or missing Assessments) and acts on it.
+            When all Assessments are current, the loop idles.
+
+    - id: hot-reload
+      title: Audit Loop Hot Reload
+      status: draft
+      invariants:
+        - Changes to operator agent instructions are picked up on the next
+          iteration without manual restart
+        - Changes to the loop script itself are picked up on the next
+          iteration without manual restart
+      notes:
+        - type: context
+          body: >-
+            Agent instruction changes are naturally picked up because each
+            iteration spawns a fresh process that reads the instructions file.
+            Loop script changes require the loop to detect that its own source
+            has changed and re-exec itself.
+
 - id: build-loop
   title: Build Loop
   requirements:
     - id: continuous-operation
       title: Continuous Operation
-      status: draft
+      status: deprecated
       invariants:
         - The system continuously audits and builds without manual intervention
         - The latest Artifact<AuditReport> is newer than the most recent
@@ -161,17 +198,55 @@
       notes:
         - type: caveat
           body: >-
-            The "all active requirements pass" invariant describes the system's
-            target state, not a guarantee. A newly added Requirement will fail
-            until the Builder addresses it. The invariant is that the system
-            converges toward this state autonomously.
+            Deprecated. Superseded by audit-loop/reconciliation and
+            build-loop/reconciliation which decouple audit and build into
+            independent reconciliation loops.
 
     - id: change-detection
       title: Change Detection
-      status: draft
+      status: deprecated
       invariants:
         - The system does not re-audit when neither the implementation nor domain
           Repository has new commits since the last audit
+      notes:
+        - type: caveat
+          body: >-
+            Deprecated. Superseded by assessment freshness — the audit loop
+            uses Assessment staleness (commit mismatch) rather than explicit
+            change detection.
+
+    - id: reconciliation
+      title: Build Reconciliation
+      status: draft
+      invariants:
+        - The build loop runs continuously without manual intervention
+        - Each iteration identifies current Assessments with result fail and
+          invokes the Builder to address one
+        - The build loop respects feature locking — it does not invoke a
+          Builder for a Feature that is already locked
+      notes:
+        - type: context
+          body: >-
+            The build loop is a reconciliation loop. Its desired state is:
+            every requirement has a passing Assessment. Each iteration
+            computes the delta (failing Assessments) and acts on it.
+            When all Assessments pass, the loop idles.
+
+    - id: hot-reload
+      title: Build Loop Hot Reload
+      status: draft
+      invariants:
+        - Changes to operator agent instructions are picked up on the next
+          iteration without manual restart
+        - Changes to the loop script itself are picked up on the next
+          iteration without manual restart
+      notes:
+        - type: context
+          body: >-
+            Agent instruction changes are naturally picked up because each
+            iteration spawns a fresh process that reads the instructions file.
+            Loop script changes require the loop to detect that its own source
+            has changed and re-exec itself.
 
 - id: artifact-cli
   title: Artifact CLI
