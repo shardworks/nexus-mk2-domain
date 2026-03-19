@@ -173,9 +173,12 @@
       status: draft
       invariants:
         - Requirements with no existing Assessment are evaluated before
-          Requirements with a stale passing Assessment
-        - Requirements whose most recent Assessment has result fail are
-          evaluated before Requirements with a stale passing Assessment
+          Requirements with a stale Assessment
+        - Among Requirements with stale Assessments, those whose most
+          recent Assessment has result fail are evaluated before those
+          with result pass
+        - Within each priority group, the Requirement whose most recent
+          Assessment has the oldest createdAt is evaluated first
       notes:
         - type: rationale
           body: >-
@@ -183,7 +186,9 @@
             actionable outcomes. Prioritizing them over re-checking
             previously passing requirements reduces time to first
             Assessment for new work and keeps the build loop fed with
-            current failure data.
+            current failure data. The oldest-first tiebreaker within
+            each group prevents the loop from repeatedly re-auditing
+            the same requirements while others go stale.
 
     - id: hot-reload
       title: Audit Loop Hot Reload
