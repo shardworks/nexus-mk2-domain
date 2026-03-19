@@ -90,9 +90,26 @@
       status: draft
       invariants:
         - Every registered Requirement has at least one Artifact<Assessment>
+        - An Assessment is invalidated when an Artifact<BuildResult> exists
+          for any Requirement in the same Feature and the Assessment's
+          projectCommit does not match the current implementation Repository
+          HEAD
         - An Assessment is stale when its projectCommit or domainCommit does
-          not match the current HEAD of the respective Repository
-        - Stale Assessments are reassessed in the next audit cycle
+          not match the current HEAD of the respective Repository and it is
+          not invalidated
+        - Invalidated Assessments are reassessed before stale Assessments
+        - Stale Assessments are reassessed at a lower priority, only when
+          no invalidated or missing Assessments are pending
+      notes:
+        - type: rationale
+          body: >-
+            A build on Feature X is likely to affect other Requirements in
+            the same Feature (they tend to touch overlapping code). Marking
+            those Assessments as invalidated ensures fast feedback on the
+            changed Feature. Requirements in unrelated Features are unlikely
+            to be affected, so their Assessments are re-evaluated on a
+            background trickle to avoid wasting tokens on low-value
+            re-checks.
 
     - id: conformance
       title: Assessment Conformance
@@ -173,22 +190,26 @@
       status: draft
       invariants:
         - Requirements with no existing Assessment are evaluated before
-          Requirements with a stale Assessment
-        - Among Requirements with stale Assessments, those whose most
-          recent Assessment has result fail are evaluated before those
-          with result pass
+          all other Requirements
+        - Invalidated Assessments are evaluated before stale Assessments
+        - Among invalidated Assessments, those with result fail are
+          evaluated before those with result pass
+        - Stale Assessments are only evaluated when no missing or
+          invalidated Assessments are pending
+        - Among stale Assessments, those with result fail are evaluated
+          before those with result pass
         - Within each priority group, the Requirement whose most recent
           Assessment has the oldest createdAt is evaluated first
       notes:
         - type: rationale
           body: >-
-            New requirements and known failures are more likely to have
-            actionable outcomes. Prioritizing them over re-checking
-            previously passing requirements reduces time to first
-            Assessment for new work and keeps the build loop fed with
-            current failure data. The oldest-first tiebreaker within
-            each group prevents the loop from repeatedly re-auditing
-            the same requirements while others go stale.
+            The two-tier priority model concentrates audit effort where
+            it matters most. Invalidated Assessments (same Feature as a
+            recent build) are likely to have changed verdicts and feed
+            the build loop. Stale Assessments in unrelated Features are
+            unlikely to have changed and are re-evaluated on a background
+            trickle to maintain eventual consistency without burning tokens
+            on low-value re-checks.
 
     - id: hot-reload
       title: Audit Loop Hot Reload
