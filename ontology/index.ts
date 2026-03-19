@@ -45,6 +45,7 @@ export type {
 
 export type {
   StagedTranscript,
+  StagedTranscriptCaptureType,
   Transcript,
   ScribeOperation,
   Scribe,

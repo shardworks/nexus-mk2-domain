@@ -13,14 +13,36 @@ import type { Operation, Operator } from "./operator.js";
  * is non-persistent (workspace-local only), so writes are fast
  * and do not involve git operations.
  *
- * Once the Scribe processes a staged transcript and produces an
- * Artifact<SessionDoc>, the raw content is promoted to a durable
- * Artifact<Transcript> and the staged artifact is deleted.
+ * A single session may produce multiple StagedTranscripts: one
+ * primary capture (from the stop hook) and zero or more pre-compaction
+ * snapshots (from the pre-compact hook). All StagedTranscripts for the
+ * same session share a sessionId. The scribe workflow groups them by
+ * sessionId before dispatching the Scribe.
+ *
+ * Once the Scribe processes a session's staged transcripts and produces
+ * an Artifact<SessionDoc>, the raw content is promoted to a durable
+ * Artifact<Transcript> and all staged artifacts for that session are
+ * deleted.
  */
 export interface StagedTranscript {
   /** Identifier of the session that produced this transcript. */
   readonly sessionId: string;
+  /**
+   * Whether this is the primary end-of-session capture or a
+   * pre-compaction snapshot taken before context was summarized.
+   */
+  readonly captureType: StagedTranscriptCaptureType;
 }
+
+/**
+ * Distinguishes primary session captures from pre-compaction snapshots.
+ *
+ * - "primary" — captured at session end (stop hook). Contains the
+ *   final session transcript, which may include compacted segments.
+ * - "precompact" — captured before context compaction (pre-compact
+ *   hook). Preserves full context that would otherwise be summarized.
+ */
+export type StagedTranscriptCaptureType = "primary" | "precompact";
 
 /**
  * A Transcript is a raw capture of a Claude Code session that has

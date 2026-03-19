@@ -390,10 +390,10 @@
       status: draft
       invariants:
         - Each invocation lists all Artifact<StagedTranscript> entries
-          via the artifact CLI and processes each one
-        - For each Artifact<StagedTranscript>, the loop dispatches the
-          Scribe to produce an Artifact<SessionDoc>, then performs
-          transcript ingestion
+          via the artifact CLI and groups them by sessionId
+        - For each session, the loop dispatches the Scribe with all
+          of that session's Artifact<StagedTranscript> entries (primary
+          and precompact), then performs transcript ingestion
         - If no Artifact<StagedTranscript> entries exist, the loop
           exits cleanly without dispatching the Scribe
       notes:
@@ -409,7 +409,7 @@
       status: draft
       invariants:
         - A failed Scribe invocation does not prevent processing of
-          remaining Artifact<StagedTranscript> entries
+          remaining sessions
         - Failed Artifact<StagedTranscript> entries are not deleted —
           they remain in the staged-transcript store for retry
 
@@ -423,19 +423,23 @@
         - Session transcripts are automatically captured during interactive
           SubagentType sessions
         - Transcripts are not captured for autonomous SubagentTypes
-        - A pre-compaction snapshot is saved before context compaction occurs
         - Captured transcripts are stored as Artifact<StagedTranscript> via
           the artifact CLI
+        - The stop hook stores one Artifact<StagedTranscript> with
+          captureType "primary" per session
+        - The pre-compact hook stores one Artifact<StagedTranscript> with
+          captureType "precompact" before each context compaction
 
     - id: transcript-ingestion
       title: Transcript Ingestion
       status: draft
       invariants:
-        - After the Scribe produces an Artifact<SessionDoc>, the
-          corresponding Artifact<StagedTranscript> is promoted to a
-          durable Artifact<Transcript> via the artifact CLI
-        - The original Artifact<StagedTranscript> is deleted after
-          successful ingestion
+        - After the Scribe produces an Artifact<SessionDoc>, all
+          Artifact<StagedTranscript> entries for that session are
+          promoted to durable Artifact<Transcript> entries via the
+          artifact CLI
+        - The original Artifact<StagedTranscript> entries are deleted
+          after successful ingestion
         - Only Artifact<StagedTranscript> entries are candidates for
           processing — the staged-transcript store is the sole queue
           of unprocessed transcripts
@@ -444,8 +448,8 @@
           body: >-
             The staged-transcript store is non-persistent (workspace-local),
             so hooks can write quickly without git operations. The scribe
-            workflow promotes the raw transcript to durable storage only
-            after it has been successfully processed, ensuring the
+            workflow promotes raw transcripts to durable storage only
+            after they have been successfully processed, ensuring the
             persistent transcript store contains only completed work.
 
     - id: scribe
