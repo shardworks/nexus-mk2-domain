@@ -14,8 +14,30 @@
 /**
  * An Effect declares what an Operation causes to happen in the system.
  * Effects describe outcomes in domain terms, not implementation mechanics.
+ *
+ * Design principle: effects should be as specific as the domain warrants,
+ * and no more. A domain-meaningful effect (like "implements") is preferred
+ * over a generic one (like "mutates") when the operation has a specific
+ * relationship to core domain concepts. Generic effects are appropriate
+ * when the domain doesn't ascribe special meaning to the action.
  */
-export type Effect = ProducesEffect;
+export type Effect = ConsumesEffect | ProducesEffect | ImplementsEffect;
+
+/**
+ * A "consumes" Effect declares that an Operation reads from a managed
+ * ArtifactStore. This makes the data flow graph explicit — you can
+ * trace lineage between operators and know which Operations are
+ * affected when upstream artifacts change.
+ *
+ * Only artifact dependencies are declared. Ambient inputs like the
+ * codebase or the requirements registry are not declared as effects —
+ * they are available to any operator by default, not dependency edges
+ * in the artifact flow graph.
+ */
+export interface ConsumesEffect {
+  readonly kind: "consumes";
+  readonly artifactType: ArtifactTypeName;
+}
 
 /**
  * A "produces" Effect indicates that an Operation deposits a new
@@ -24,6 +46,21 @@ export type Effect = ProducesEffect;
 export interface ProducesEffect {
   readonly kind: "produces";
   readonly artifactType: ArtifactTypeName;
+}
+
+/**
+ * An "implements" Effect indicates that an Operation changes a codebase
+ * in response to requirements. This is distinct from a generic mutation —
+ * it declares that the operation's changes exist in relationship to the
+ * requirements model. When an "implements" effect occurs, the system's
+ * compliance posture potentially changes: every audit verdict could
+ * be different afterward.
+ *
+ * Which codebase is affected (self or an external repository) is a
+ * runtime parameter determined at invocation, not a static declaration.
+ */
+export interface ImplementsEffect {
+  readonly kind: "implements";
 }
 
 // ─── Operation ─────────────────────────────────────────────
@@ -62,7 +99,9 @@ export interface Operator {
  */
 export interface AuditOperation extends Operation {
   readonly name: "audit";
-  readonly effects: readonly [{ readonly kind: "produces"; readonly artifactType: "audit-report" }];
+  readonly effects: readonly [
+    { readonly kind: "produces"; readonly artifactType: "audit-report" },
+  ];
 }
 
 /**
@@ -101,16 +140,39 @@ export interface Verdict {
 
 export type VerdictResult = "pass" | "fail" | "unknown";
 
+// ─── Transcript ─────────────────────────────────────────────
+
+/**
+ * A Transcript is a raw capture of a Claude Code session. It is
+ * produced by hooks during human-facing sessions and consumed by
+ * Scribe for synthesis into structured SessionDocs.
+ *
+ * The transcript content is the raw session data (JSONL format).
+ * The Transcript type captures metadata about the capture, not
+ * the content itself — the content is the artifact's storage payload.
+ */
+export interface Transcript {
+  /** Identifier of the session that produced this transcript. */
+  readonly sessionId: string;
+  /** Whether the transcript is awaiting processing or has been processed. */
+  readonly status: TranscriptStatus;
+}
+
+export type TranscriptStatus = "pending" | "archived";
+
 // ─── Scribe ────────────────────────────────────────────────
 
 /**
- * The "scribe" Operation synthesizes a raw session transcript into
- * a structured SessionDoc and deposits an Artifact<SessionDoc> in the
- * SessionDoc ArtifactStore.
+ * The "scribe" Operation consumes a Transcript artifact and synthesizes
+ * it into a structured SessionDoc, deposited in the SessionDoc
+ * ArtifactStore.
  */
 export interface ScribeOperation extends Operation {
   readonly name: "scribe";
-  readonly effects: readonly [{ readonly kind: "produces"; readonly artifactType: "session-doc" }];
+  readonly effects: readonly [
+    { readonly kind: "consumes"; readonly artifactType: "transcript" },
+    { readonly kind: "produces"; readonly artifactType: "session-doc" },
+  ];
 }
 
 /**
@@ -160,13 +222,16 @@ export type Significance = "low" | "medium" | "high";
 // ─── Herald ────────────────────────────────────────────────
 
 /**
- * The "herald" Operation synthesizes session documentation into an
- * outward-facing narrative and deposits an Artifact<Publication> in
- * the Publication ArtifactStore.
+ * The "herald" Operation consumes SessionDoc artifacts and synthesizes
+ * them into an outward-facing narrative, deposited as an
+ * Artifact<Publication> in the Publication ArtifactStore.
  */
 export interface HeraldOperation extends Operation {
   readonly name: "herald";
-  readonly effects: readonly [{ readonly kind: "produces"; readonly artifactType: "publication" }];
+  readonly effects: readonly [
+    { readonly kind: "consumes"; readonly artifactType: "session-doc" },
+    { readonly kind: "produces"; readonly artifactType: "publication" },
+  ];
 }
 
 /**
@@ -201,13 +266,48 @@ export interface Publication {
  */
 export type PublicationType = "recap" | "deep-dive" | "status-update" | "blog-post";
 
+// ─── Builder ──────────────────────────────────────────────
+
+/**
+ * The "build" Operation consumes the most recent audit report to
+ * identify failing requirements, then changes the codebase to
+ * address them. The builder's effect is "implements" — it exists
+ * in direct relationship to the requirements model.
+ */
+export interface BuildOperation extends Operation {
+  readonly name: "build";
+  readonly effects: readonly [
+    { readonly kind: "consumes"; readonly artifactType: "audit-report" },
+    { readonly kind: "implements" },
+  ];
+}
+
+/**
+ * A Builder is an Operator that changes a codebase to satisfy
+ * requirements. It consumes audit reports to identify what needs to
+ * be done and implements changes to make failing requirements pass.
+ *
+ * Unlike read-only operators (Auditor) or synthesis operators
+ * (Scribe, Herald), the Builder modifies the system itself. Its
+ * "implements" effect signals that the system's compliance posture
+ * may change as a result of its operation.
+ */
+export interface Builder extends Operator {
+  readonly name: "builder";
+  readonly operations: readonly [BuildOperation];
+}
+
 // ─── Artifact ──────────────────────────────────────────────
 
 /**
  * The fixed set of Artifact types in the system. Each name corresponds
  * to a domain data type and has a dedicated ArtifactStore.
  */
-export type ArtifactTypeName = "audit-report" | "session-doc" | "publication";
+export type ArtifactTypeName =
+  | "audit-report"
+  | "transcript"
+  | "session-doc"
+  | "publication";
 
 /**
  * An Artifact is a typed, persistent record produced by an Operation.
@@ -244,6 +344,7 @@ export interface ArtifactStore<T> {
  */
 export interface ArtifactStoreRegistry {
   readonly auditReport: ArtifactStore<AuditReport>;
+  readonly transcript: ArtifactStore<Transcript>;
   readonly sessionDoc: ArtifactStore<SessionDoc>;
   readonly publication: ArtifactStore<Publication>;
 }

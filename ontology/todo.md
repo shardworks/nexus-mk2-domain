@@ -14,12 +14,6 @@ Unresolved vocabulary and design questions. Items stay here until resolved and r
 
 Tension: too few terms and we're ambiguous in conversation. Too many and we're maintaining distinctions nobody uses.
 
-## ~~Replace Auditor.audit() with operation/effect declarations~~
-
-**Status:** resolved (2026-03-18)
-
-Replaced `audit(): Promise<AuditReport>` with the Operation/Effect model. Auditor now declares `readonly operations: readonly [AuditOperation]` where AuditOperation has a "produces" effect targeting "audit-report". The method signature is gone; the ontology now describes what the operation *causes* rather than how to *invoke* it.
-
 ## Structured acceptance criteria on Requirements
 
 **Status:** sketched in design-notes.md (2026-03-18)
@@ -36,14 +30,31 @@ Not yet proposing a structured acceptance type. Needs more concrete requirements
 
 The link between `"audit-report"` (the ArtifactTypeName string) and `AuditReport` (the TypeScript content type) is currently implicit — you have to look at the ArtifactStoreRegistry to see the connection. A type-level map (e.g., `{ "audit-report": AuditReport }`) could make this compile-time checkable, so that an Operation declaring `artifactType: "audit-report"` is statically linked to `Artifact<AuditReport>`. This would require mapped types, which were previously deferred. Revisit when we have a second artifact type.
 
-## Retrieval from ArtifactStores
+## Future effect kinds
 
-**Status:** deferred (clarified by Dispatcher)
+**Status:** candidates identified (2026-03-19)
 
-Producing Artifacts is modeled (ProducesEffect). Consuming/retrieving them is not. The Dispatcher clarified that invocation doesn't return results — Artifacts are deposited in stores, and retrieval is a store concern. But the store interface (how you get an Artifact out) is still unspecified. Options: baseline capability of all stores, distinct vocabulary concept, or left entirely to implementation. Needs a concrete consumer use case to resolve.
+Two future effect kinds have been identified but deferred until a concrete operator drives the need:
 
-## "modifies" effect kind
+- **notifies** — signals a human or external system. Distinct from `produces` (ephemeral vs persistent, action-oriented vs record-keeping). Add when a monitor or alerting operator is built.
+- **invalidates** — declares that an operation's output makes some other artifact stale. Add when implicit staleness reasoning proves insufficient.
 
-**Status:** deferred
+See design-notes.md "Future Effect Candidates" for full rationale.
 
-Listed in design notes but not formalized. Unlike "produces" (targets a typed ArtifactStore), "modifies" has a vague target ("source files", "project state"). Needs a concrete operator type (builder?) to validate what the target should look like.
+## Resolved
+
+### ~~Replace Auditor.audit() with operation/effect declarations~~
+
+**Resolved:** 2026-03-18. Replaced with Operation/Effect model.
+
+### ~~"modifies" effect kind~~
+
+**Resolved:** 2026-03-19. After analysis of a dozen potential operators and their effects, the generic "modifies/mutates" concept was replaced with the domain-specific `implements` effect for the builder. The builder's relationship to requirements is the defining characteristic of its effect — it doesn't just change code, it changes code *in response to requirements*. Generic mutation effects (for operators without a requirements relationship) can be added when needed. See design-notes.md "Effect Design Principles" for the guiding policy.
+
+### ~~Retrieval from ArtifactStores~~
+
+**Resolved:** 2026-03-19. The `consumes` effect kind addresses the input side of data flow. Operations declare which ArtifactStores they read from via `ConsumesEffect`, making the dependency graph explicit. Ambient inputs (codebase, requirements) are not declared — they are available to any operator by default.
+
+### ~~"reads" effect — source vocabulary~~
+
+**Resolved:** 2026-03-19. Renamed to `consumes` as the natural counterpart to `produces`. Scoped exclusively to managed artifact types (`artifactType: ArtifactTypeName`), eliminating the mixed-string problem. Non-artifact inputs (codebase, requirements) are ambient context, not declared effects.

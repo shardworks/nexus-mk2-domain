@@ -65,8 +65,8 @@ Simulated natural-language commands and questions were used to discover what con
 | Concept | Status | What it is | Example phrases |
 |---------|--------|------------|-----------------|
 | **Operator** | in ontology | An addressable, invocable entity that declares Operations | "is the auditor running", "stop the builder" |
-| **Operation** | in ontology | A named action an Operator can perform, defined by its Effects | "run an audit", "have the builder plan a fix" |
-| **Effect** | in ontology | A declaration of what an Operation causes (currently: "produces") | "the audit produces an AuditReport" |
+| **Operation** | in ontology | A named action an Operator can perform, defined by its Effects | "run an audit", "have the builder fix that" |
+| **Effect** | in ontology | A declaration of what an Operation causes (consumes, produces, implements) | "the builder consumes audit reports", "the auditor produces an AuditReport" |
 | **Artifact** | in ontology | A typed, persistent record produced by an Operation | "audit reports", "show me the last report" |
 | **ArtifactStore** | in ontology | The canonical home for Artifacts of one type | "where do audit reports live" |
 | **Dispatcher** | in ontology | Triggers Operations on Operators; the invocation mechanism | "run an audit", "have the auditor do its thing" |
@@ -94,10 +94,18 @@ Auditor
   operations:
     - name: "audit"
       effects:
-        - produces: Artifact<AuditReport> (deposited in the AuditReport ArtifactStore)
+        - produces: Artifact<AuditReport>
+
+Builder
+  name: "builder"
+  operations:
+    - name: "build"
+      effects:
+        - consumes: Artifact<AuditReport>
+        - implements
 ```
 
-This says: "the auditor has an operation called 'audit' that produces an AuditReport Artifact and deposits it in the corresponding ArtifactStore." It doesn't say how you invoke it, what format the Artifact is stored in, or where the store lives. Those are constrained by Requirements.
+This says what each operator does in domain terms — not how you invoke it, what format artifacts are stored in, or where stores live. Those are constrained by Requirements.
 
 ### Artifacts and ArtifactStores
 
@@ -106,23 +114,97 @@ An **Artifact** is a typed, persistent record produced by an Operation. It wraps
 An **ArtifactStore** is the canonical home for Artifacts of one type. Each Artifact type has exactly one store. The store is the decoupling point between producers and consumers:
 
 - **Producer side:** An Operation's "produces" effect means "deposits an Artifact into the appropriate ArtifactStore."
-- **Consumer side:** Anything that needs the Artifact reads it from the store. This is an implicit input — the consumer knows where to look, just as the Auditor implicitly knows where Requirements live.
+- **Consumer side:** An Operation's "consumes" effect declares which ArtifactStore it reads from, creating a dependency edge in the data flow graph.
 
 The ArtifactStoreRegistry is the system's catalog of all stores. It maps Artifact types to their stores, providing a single entry point for locating where any type of Artifact lives.
 
-Storage mechanism (filesystem, database, cloud) is an implementation detail constrained by Requirements, not by the ontology. The ontology says "AuditReport Artifacts live in a store." A Requirement says "that store must be implemented as JSON files at `/reports/audit/{id}.json`."
+Storage mechanism (filesystem, database, cloud) is an implementation detail constrained by Requirements, not by the ontology. The ontology says "AuditReport Artifacts live in a store." A Requirement says "that store must be implemented as JSON files at `.artifacts/audit-report/{id}.json`."
 
-### Effects and the Vocabulary–Requirements Bridge
+### Effect Design Principles (2026-03-19)
 
-The Artifact/ArtifactStore vocabulary creates a precise bridge between Operations and Requirements:
+**Effects should be as specific as the domain warrants, and no more.**
 
-1. **Ontology** defines the data type: "An AuditReport contains Verdicts with per-Requirement results and evidence."
-2. **Ontology** defines the container: "An Artifact\<AuditReport\> wraps an AuditReport with identity and metadata."
-3. **Ontology** defines the store: "The ArtifactStoreRegistry has an AuditReport store."
-4. **Operation** references these: "The audit operation produces an Artifact\<AuditReport\> in the AuditReport store."
-5. **Requirement** constrains the store: "The AuditReport ArtifactStore must persist Artifacts as JSON at `/reports/audit/{id}.json`."
+The effect vocabulary is not a minimal universal set (like CRUD). It is a domain-meaningful vocabulary where each effect kind captures a relationship that matters to the system's core model. Guidelines:
 
-Each layer references formal vocabulary terms. An auditor can mechanically verify step 5: does the file exist at the expected path? does it parse as JSON? does its `content` field conform to the AuditReport type? does it have the expected Artifact metadata (id, createdAt)?
+- **Use a specific effect when the operation has a named relationship to a core domain concept.** The builder doesn't just "change something" — it changes code *in response to requirements*. That relationship to requirements is the most important thing about the builder's effect. The effect kind `implements` captures this.
+- **Use a generic effect when the domain doesn't ascribe special meaning to the action.** A future operator that updates issue labels or rotates credentials is "mutating state," but that mutation has no special relationship to requirements, artifacts, or other core concepts. A generic `mutates` effect would be appropriate there.
+- **Effects exist for legibility, not for a type checker.** The ontology's audience is humans and agents reasoning about the system. An effect kind should make the system's behavior more understandable when you read the ontology.
+
+This means the Effect type union will grow organically as new operator types introduce domain-meaningful relationships, rather than being a small, fixed set designed for completeness.
+
+### Consumes and Produces: The Artifact Flow Pair
+
+`consumes` and `produces` are natural counterparts that together define the artifact flow graph:
+
+- **`produces`** — deposits a new Artifact into a managed ArtifactStore
+- **`consumes`** — reads from a managed ArtifactStore
+
+Both carry an `artifactType: ArtifactTypeName`, scoping them to managed artifact stores. This is deliberate: only artifact dependencies create edges in the data flow graph. Ambient inputs (the codebase, the requirements registry) are available to any operator by default and are not declared as effects.
+
+### Static Declarations vs Runtime Parameters
+
+Effect declarations are static — they describe what *kinds* of things an operation does, not the specifics of each invocation:
+
+| Declared in ontology (static) | Determined at invocation (runtime) |
+|---|---|
+| "consumes audit-report artifacts" | *which* specific audit report |
+| "produces session-doc artifacts" | the specific artifact ID and content |
+| "implements" | *which* codebase, *which* requirement to address |
+
+The ontology says what an operator is *designed to do*. The Dispatcher (or invocation script) determines the parameters for each run.
+
+### Effect Kinds
+
+| Kind | Meaning | Metadata | Example |
+|------|---------|----------|---------|
+| **consumes** | Reads from a managed ArtifactStore | `artifactType: ArtifactTypeName` | builder consumes audit-report |
+| **produces** | Deposits a new Artifact into an ArtifactStore | `artifactType: ArtifactTypeName` | auditor produces audit-report |
+| **implements** | Changes a codebase in response to requirements | *(none — target is runtime)* | builder implements |
+
+### Future Effect Candidates
+
+Identified but not yet formalized. Each should be added when a concrete operator drives the need:
+
+- **notifies** — Signals a human or external system that something happened. Distinct from `produces` because the audience is a human or webhook, not an ArtifactStore. The output is ephemeral and action-oriented, not persistent and retrievable. *Candidate trigger: a monitor operator that alerts on failures.*
+- **invalidates** — Declares that an Operation's output makes some other artifact stale. Example: a new audit report invalidates prior reports for the same scope. This is how the system could reason about freshness without timestamp heuristics. *Candidate trigger: when implicit staleness reasoning proves insufficient.*
+
+Implementation-specific details (file format, storage path, process mechanics) belong in **Requirements**, not in effects. The effect says WHAT happens in domain terms. The Requirement says WHERE and HOW it must happen in concrete terms.
+
+### The Data Flow Graph
+
+With `consumes` and `produces` declared on every operation, the system's artifact flow is fully traceable:
+
+```
+[hooks] ──produces──→ Transcript
+                          │
+                       consumes
+                          ↓
+                       Scribe ──produces──→ SessionDoc
+                                               │
+                                            consumes
+                                               ↓
+                                            Herald ──produces──→ Publication
+
+                       Auditor ──produces──→ AuditReport
+                                                │
+                                             consumes
+                                                ↓
+                                             Builder ──implements──→ [codebase]
+```
+
+This graph is derivable from the ontology alone — no implementation knowledge required. It tells you what each operator depends on, what it produces, and where its output goes. The Dispatcher can use this to determine what needs to re-run when inputs change.
+
+Note: the auditor reads the codebase and requirements, but these are ambient inputs, not artifact dependencies. They don't appear in the artifact flow graph. The builder's `implements` effect feeds back into the codebase, which the auditor reads — completing the audit→build→audit loop, but that loop is orchestrated by the Dispatcher, not declared in effects.
+
+### Dispatcher
+
+The **Dispatcher** is the invocation mechanism — it triggers Operations on Operators. Given an Operator name and Operation name, it causes the Operation to execute and its declared Effects to occur. It does not return results; produced Artifacts are deposited in ArtifactStores.
+
+The Dispatcher completes the produce-side vocabulary: Operator (who) → Operation (what) → Dispatcher (trigger) → Effect (outcome) → Artifact (output) → ArtifactStore (location).
+
+The Dispatcher knows about the available Operators (via its `operators` list). How it actually invokes an Operation — starting an Agent, running a script, etc. — is implementation. A REPL is a Dispatcher interface; a batch orchestrator is another.
+
+Note: orchestration logic (e.g., "run an audit after every build") belongs to the Dispatcher or a scheduling layer, not to the Effect model. Operators should remain ignorant of each other. The `consumes` effect declares data dependencies, not execution ordering — the Dispatcher uses the dependency graph to determine what to trigger.
 
 ### Spectrum of Requirement Formality
 
@@ -148,34 +230,11 @@ The first is a prose statement an agent interprets. The second is a structured a
 
 We don't need to commit to the structured form yet. But the observation is: **the more vocabulary terms a requirement references, the more checkable it becomes.** The ontology is what makes that progression possible.
 
-### Effect Kinds
-
-| Kind | Meaning | Example |
-|------|---------|---------|
-| **produces** | Deposits a new Artifact in the corresponding ArtifactStore | audit → Artifact\<AuditReport\> |
-| **modifies** | Changes existing project state | build → source files |
-
-Implementation-specific details (file format, storage path, process mechanics) belong in **Requirements**, not in effects. The effect says WHAT happens in domain terms. The Requirement says WHERE and HOW it must happen in concrete terms.
-
-### Retrieval
-
-An open question. Consuming Artifacts from a store is important but doesn't fit the "effects" model — reading doesn't change anything. Retrieval may be a distinct concept from Operations/Effects, or it may be a baseline capability of ArtifactStores that doesn't need its own vocabulary. Deferred until we have a concrete consumer to reason about.
-
-### Dispatcher
-
-The **Dispatcher** is the invocation mechanism — it triggers Operations on Operators. Given an Operator name and Operation name, it causes the Operation to execute and its declared Effects to occur. It does not return results; produced Artifacts are deposited in ArtifactStores.
-
-The Dispatcher completes the produce-side vocabulary: Operator (who) → Operation (what) → Dispatcher (trigger) → Effect (outcome) → Artifact (output) → ArtifactStore (location).
-
-The Dispatcher knows about the available Operators (via its `operators` list). How it actually invokes an Operation — starting an Agent, running a script, etc. — is implementation. A REPL is a Dispatcher interface; a batch orchestrator is another.
-
 ### Current Status
 
-The following are now **formalized in `index.ts`**: Effect, ProducesEffect, Operation, AuditOperation, Operator, Auditor, Dispatcher, Artifact, ArtifactTypeName, ArtifactStore, ArtifactStoreRegistry, Agent, Requirement.
+The following are **formalized in `index.ts`**: Effect (ConsumesEffect, ProducesEffect, ImplementsEffect), Operation, Operator, Auditor (AuditOperation), Scribe (ScribeOperation), Herald (HeraldOperation), Builder (BuildOperation), Transcript, Dispatcher, Artifact, ArtifactTypeName, ArtifactStore, ArtifactStoreRegistry, Agent, Requirement.
 
 ### Open Questions
 
-- **"modifies" effect** — listed in the effect kinds table but not yet formalized as a type. Needs a concrete operator (builder?) to validate the pattern. Unlike "produces" (which targets a typed ArtifactStore), "modifies" has a vague target ("source files", "project state"). May need a different shape.
 - **Structured acceptance criteria** — how do we evolve Requirement.acceptance from freeform strings toward structured assertions? Keep strings for now, but use ontology terms consistently so the path to formalization is clear.
-- **Retrieval** — consuming Artifacts from a store is important but doesn't fit the effects model (reading doesn't change anything). May be a baseline capability of ArtifactStores, or a distinct concept. Deferred until we have a concrete consumer to reason about.
 - **ArtifactTypeName ↔ content type mapping** — currently the link between `"audit-report"` and `AuditReport` is implicit (through the ArtifactStoreRegistry). A type-level map could make this connection compile-time checkable. Deferred as a potential future refinement.
